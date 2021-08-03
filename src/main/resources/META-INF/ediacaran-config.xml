@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<java version="1.8.0_101" class="java.beans.XMLDecoder">
+
+	<object	class="br.com.uoutec.community.ediacaran.ServerBootstrap">
+
+		<void property="listenerManager">
+			<object class="br.com.uoutec.community.ediacaran.EdiacaranListenerManagerImp"/>
+		</void>
+
+		<void property="pluginManager">
+			<object class="br.com.uoutec.community.ediacaran.PluginManagerImp"/>
+		</void>
+
+		<void property="pluginConfigurationFileReader">
+			<object class="br.com.uoutec.community.ediacaran.plugins.PluginConfigurationFileReaderImp"/>
+		</void>
+
+		<void property="pluginConfigurationFileWriter">
+			<object class="br.com.uoutec.community.ediacaran.plugins.PluginConfigurationFileWriterImp"/>
+		</void>
+
+		<void property="pluginInitializer">
+			<object class="br.com.uoutec.community.ediacaran.weld.BuilderPluginInitializer">
+			</object>
+		</void>
+
+		<void property="pluginsSuppliersFactory">
+			<object class="br.com.uoutec.community.ediacaran.weld.PluginsSuppliersFactoryImp"/>
+		</void>
+		
+		<void property="pluginClassLoaderFactory">
+			<object class="br.com.uoutec.community.ediacaran.weld.BuilderClassLoaderFactory"/>
+		</void>
+		
+		<void property="pluginsLoader">
+			<object class="br.com.uoutec.community.ediacaran.plugins.PluginsLoaderImp"/>
+		</void>
+
+		<void property="varParser">
+			<object class="br.com.uoutec.community.ediacaran.weld.VarParserConfigurationImp">
+			
+				<void property="useDefaultVars">
+					<boolean>true</boolean>
+				</void>
+			
+			</object>
+		</void>
+
+		<void method="addPluginSearch">
+			<object class="br.com.uoutec.community.ediacaran.plugins.JarPluginsSearch">
+				<object class="br.com.uoutec.community.ediacaran.plugin.EdiacaranExportPluginMetadata"/>
+			</object>
+		</void>
+
+		<void method="addPluginSearch">
+			<object class="br.com.uoutec.community.ediacaran.plugins.FileSystemPluginsSearch"/>
+		</void>
+
+	</object>
+</java>
