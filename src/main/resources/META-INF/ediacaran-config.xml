@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <java version="1.8.0_101" class="java.beans.XMLDecoder">
 
-	<object	class="br.com.uoutec.community.ediacaran.ServerBootstrap">
+	<object	class="br.com.uoutec.community.ediacaran.web.tomcat.TomcatServerBootstrap">
 
 		<void property="listenerManager">
-			<object class="br.com.uoutec.community.ediacaran.EdiacaranListenerManagerImp"/>
+			<object class="br.com.uoutec.community.ediacaran.EdiacaranListenerManagerImp">
+				<!--				
+				<void method="addListener">
+					<object class="br.com.uoutec.community.ediacaran.ProxyEdiacaranEventListener">
+						<void method="setEventListerClass">
+							<string>br.com.uoutec.community.ediacaran.system.WebEdiacaranListener</string>
+						</void>
+					</object>
+				</void>
+				-->
+			</object>
 		</void>
 
 		<void property="pluginManager">
@@ -21,6 +31,11 @@
 
 		<void property="pluginInitializer">
 			<object class="br.com.uoutec.community.ediacaran.weld.BuilderPluginInitializer">
+				<!--
+				<void method="addExtension">
+					<string>com.arjuna.ats.jta.cdi.TransactionExtension</string>
+				</void>
+				-->
 			</object>
 		</void>
 
@@ -31,6 +46,14 @@
 		<void property="pluginClassLoaderFactory">
 			<object class="br.com.uoutec.community.ediacaran.weld.BuilderClassLoaderFactory"/>
 		</void>
+		
+		<!--  
+		<void property="parentClassLoader">
+			<object class="java.net.URLClassLoader">
+				...
+			</object>
+		</void>
+		-->
 		
 		<void property="pluginsLoader">
 			<object class="br.com.uoutec.community.ediacaran.plugins.PluginsLoaderImp"/>
@@ -43,6 +66,13 @@
 					<boolean>true</boolean>
 				</void>
 			
+				<!--
+				<void method="registerVarResolver">
+					<string>teste</string>
+					<object class="br.com.uoutec.community.ediacaran.weld.VarParserImp"/>
+				</void>
+				-->
+				
 			</object>
 		</void>
 
@@ -56,5 +86,11 @@
 			<object class="br.com.uoutec.community.ediacaran.plugins.FileSystemPluginsSearch"/>
 		</void>
 
+		<!-- 
+		<void method="setSystemProperty">
+			<string>java.util.logging.manager</string>
+			<string>org.apache.logging.log4j.jul.LogManager</string>
+		</void>
+		-->	
 	</object>
 </java>
