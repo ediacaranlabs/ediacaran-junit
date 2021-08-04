@@ -8,6 +8,8 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Named;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +20,7 @@ import org.junit.runner.notification.RunNotifier;
 
 import br.com.uoutec.community.ediacaran.EdiacaranBootstrap;
 import br.com.uoutec.community.ediacaran.PluginManager;
+import br.com.uoutec.community.ediacaran.plugins.EntityContextPlugin;
 import br.com.uoutec.community.ediacaran.plugins.PluginInitializer;
 import br.com.uoutec.io.resource.DefaultResourceLoader;
 import br.com.uoutec.io.resource.Resource;
@@ -37,11 +40,15 @@ public class EdiacaranTestRunner extends Runner{
 	
 	private Method after;
 	
+	private boolean runInContext;
+	
     public EdiacaranTestRunner(Class<?> testClass) {
         init(testClass);
     }
     
     private void init(Class<?> testClass) {
+    	
+    	this.runInContext = false;
     	
     	this.testClass = testClass;
     	
@@ -62,42 +69,56 @@ public class EdiacaranTestRunner extends Runner{
     	}
     	
 		try {
-			before.invoke(test);
+			executeMethod(test, before);
 		}
 		catch (InvocationTargetException e) {
-        	notifier.fireTestFailure(
-        			new Failure(Description
-        					.createTestDescription(testClass, before.getName()), e.getTargetException()));
-			throw e;
+			throw e.getTargetException();
 		}
 		catch (Throwable e) {
-        	notifier.fireTestFailure(
-        			new Failure(Description
-        					.createTestDescription(testClass, before.getName()), e));
 			throw e;
 		}
     }
 
     private void after(Object test, RunNotifier notifier) throws Throwable {
+    	
     	if(after == null) {
     		return;
     	}
     	
 		try {
-			after.invoke(test);
+			executeMethod(test, after);
 		}
 		catch (InvocationTargetException e) {
-        	notifier.fireTestFailure(
-        			new Failure(Description
-        					.createTestDescription(testClass, before.getName()), e.getTargetException()));
-			throw e;
+			throw e.getTargetException();
 		}
 		catch (Throwable e) {
-        	notifier.fireTestFailure(
-        			new Failure(Description
-        					.createTestDescription(testClass, before.getName()), e));
 			throw e;
 		}
+    }
+    
+    private void executeMethod(Object o, Method m
+    		) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    	
+    	Class<?>[] paramsType = m.getParameterTypes();
+    	Object[] paramsVals = new Object[paramsType.length];
+    	
+    	if(paramsType.length > 0 && !runInContext) {
+    		throw new RuntimeException("plugin context must be informed!");
+    	}
+    	
+    	for(int i=0;i< paramsType.length;i++) {
+    		Object value = null;
+    		Class<?> paramType = paramsType[i];
+    		Named named = m.getAnnotatedParameterTypes()[i].getAnnotation(Named.class);
+    		
+			value = named != null? 
+					EntityContextPlugin.getEntity(named.value(), paramType) :
+					EntityContextPlugin.getEntity(paramType);
+			
+			paramsVals[i] = value;
+    	}
+    	
+    	m.invoke(o, paramsVals);
     }
     
 	@Override
@@ -121,7 +142,7 @@ public class EdiacaranTestRunner extends Runner{
             			.createTestDescription(testClass, method.getName()));
             	
             	try {
-            		runBare(method, testObject, notifier);
+            		runInContext(testObject, method, notifier);
             	}
             	catch(Throwable ex) {
                 	notifier.fireTestFailure(
@@ -139,7 +160,36 @@ public class EdiacaranTestRunner extends Runner{
         
 	}
 
-	private void runBare(Method method, Object testObject, 
+	private void runInContext(Object testObject, Method method, 
+			RunNotifier notifier) throws Throwable {
+		
+		Map<String,Object> contextVars = getPluginConfigVars(this.pluginManager, testClass, method);
+		ClassLoader classLoader = null;
+		
+		if(contextVars != null) {
+			classLoader = (ClassLoader)contextVars.get(PluginInitializer.CLASS_LOADER);
+		}
+		 
+    	ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
+    	
+		if(contextVars != null) {
+			Thread.currentThread().setContextClassLoader(classLoader);
+    		runInContext = true;
+		}
+    	
+    	try {
+    		runBare(testObject, method, notifier);
+    	}
+    	finally {
+    		if(contextVars != null) {
+    			Thread.currentThread().setContextClassLoader(oldClassLoader);
+        		runInContext = false;
+    		}
+    	}
+    	
+	}
+	
+	private void runBare(Object testObject, Method method, 
 			RunNotifier notifier) throws Throwable {
 		
     	Throwable exception = null;
@@ -187,29 +237,16 @@ public class EdiacaranTestRunner extends Runner{
 	private void executeTest(Object testObject, Method method, 
 			RunNotifier notifier) throws Throwable {
 		
-		Map<String,Object> contextVars = getPluginConfigVars(this.pluginManager, testClass, method);
-		ClassLoader classLoader = null;
+		try {
+			executeMethod(testObject, method);
+		}
+		catch (InvocationTargetException e) {
+			throw e.getTargetException();
+		}
+		catch (Throwable e) {
+			throw e;
+		}
 		
-		if(contextVars != null) {
-			classLoader = (ClassLoader)contextVars.get(PluginInitializer.CLASS_LOADER);
-		}
-		 
-    	ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
-    	
-		if(contextVars != null) {
-			Thread.currentThread().setContextClassLoader(classLoader);
-		}
-    	
-    	try {
-        	method.invoke(testObject);
-    	}
-    	finally {
-    		if(contextVars != null) {
-    			Thread.currentThread().setContextClassLoader(oldClassLoader);
-    		}
-    	}
-
-    	
 	}
 	
 	private void startApplication() {
