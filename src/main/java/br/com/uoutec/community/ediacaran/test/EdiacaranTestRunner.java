@@ -3,10 +3,13 @@ package br.com.uoutec.community.ediacaran.test;
 import java.beans.XMLDecoder;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
@@ -30,9 +33,71 @@ public class EdiacaranTestRunner extends Runner{
 	
 	private PluginManager pluginManager;
 	
+	private Method before;
+	
+	private Method after;
+	
     public EdiacaranTestRunner(Class<?> testClass) {
-    	super();
-        this.testClass = testClass;
+        init(testClass);
+    }
+    
+    private void init(Class<?> testClass) {
+    	
+    	this.testClass = testClass;
+    	
+    	for(Method m: testClass.getDeclaredMethods()) {
+    		if(m.isAnnotationPresent(Before.class)) {
+    			before = m;
+    		}
+    		else
+    		if(m.isAnnotationPresent(After.class)) {
+    			after = m;
+    		}
+    	}
+    }
+    
+    private void before(Object test, RunNotifier notifier) throws Throwable {
+    	if(before == null) {
+    		return;
+    	}
+    	
+		try {
+			before.invoke(test);
+		}
+		catch (InvocationTargetException e) {
+        	notifier.fireTestFailure(
+        			new Failure(Description
+        					.createTestDescription(testClass, before.getName()), e.getTargetException()));
+			throw e;
+		}
+		catch (Throwable e) {
+        	notifier.fireTestFailure(
+        			new Failure(Description
+        					.createTestDescription(testClass, before.getName()), e));
+			throw e;
+		}
+    }
+
+    private void after(Object test, RunNotifier notifier) throws Throwable {
+    	if(after == null) {
+    		return;
+    	}
+    	
+		try {
+			after.invoke(test);
+		}
+		catch (InvocationTargetException e) {
+        	notifier.fireTestFailure(
+        			new Failure(Description
+        					.createTestDescription(testClass, before.getName()), e.getTargetException()));
+			throw e;
+		}
+		catch (Throwable e) {
+        	notifier.fireTestFailure(
+        			new Failure(Description
+        					.createTestDescription(testClass, before.getName()), e));
+			throw e;
+		}
     }
     
 	@Override
@@ -51,13 +116,59 @@ public class EdiacaranTestRunner extends Runner{
         for (Method method : testClass.getMethods()) {
         	
             if (method.isAnnotationPresent(Test.class)) {
-            	executeTest(testObject, method, notifier);
+
+            	notifier.fireTestStarted(Description
+            			.createTestDescription(testClass, method.getName()));
+            	
+            	try {
+            		runBare(method, testObject, notifier);
+            	}
+            	catch(Throwable ex) {
+                	notifier.fireTestFailure(
+                			new Failure(Description
+                					.createTestDescription(testClass, method.getName()), ex));
+                	continue;
+            	}
+            	
+            	notifier.fireTestFinished(Description
+            			.createTestDescription(testClass, method.getName()));
+
             }
             
         }
         
 	}
 
+	private void runBare(Method method, Object testObject, 
+			RunNotifier notifier) throws Throwable {
+		
+    	Throwable exception = null;
+    	
+    	before(testObject, notifier);
+    	
+    	try {
+    		executeTest(testObject, method, notifier);
+    	}
+    	catch(Throwable ex) {
+    		exception = ex;
+    	}
+    	finally {
+    		try {
+    			after(testObject, notifier);
+    		}
+    		catch(Throwable ex) {
+    			if(exception == null) {
+    				exception = ex;
+    			}
+    				
+    		}
+    	}
+    	
+    	if (exception != null) { 
+    		throw exception;	
+    	}
+	}
+	
 	private Object createTestObject() {
 		
     	Object testObject;
@@ -73,7 +184,8 @@ public class EdiacaranTestRunner extends Runner{
     	
 	}
 
-	private void executeTest(Object testObject, Method method, RunNotifier notifier) {
+	private void executeTest(Object testObject, Method method, 
+			RunNotifier notifier) throws Throwable {
 		
 		Map<String,Object> contextVars = getPluginConfigVars(this.pluginManager, testClass, method);
 		ClassLoader classLoader = null;
@@ -82,9 +194,6 @@ public class EdiacaranTestRunner extends Runner{
 			classLoader = (ClassLoader)contextVars.get(PluginInitializer.CLASS_LOADER);
 		}
 		 
-    	notifier.fireTestStarted(Description
-    			.createTestDescription(testClass, method.getName()));
-
     	ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
     	
 		if(contextVars != null) {
@@ -94,21 +203,12 @@ public class EdiacaranTestRunner extends Runner{
     	try {
         	method.invoke(testObject);
     	}
-    	catch(Exception e) {
-        	notifier.fireTestFailure(
-        			new Failure(Description
-        					.createTestDescription(testClass, method.getName()), e));
-    		throw new RuntimeException(e);
-    	}
     	finally {
     		if(contextVars != null) {
     			Thread.currentThread().setContextClassLoader(oldClassLoader);
     		}
     	}
 
-    	notifier.fireTestFinished(Description
-    			.createTestDescription(testClass, method.getName()));
-    	
     	
 	}
 	
