@@ -5,15 +5,9 @@
 
 		<void property="listenerManager">
 			<object class="br.com.uoutec.community.ediacaran.EdiacaranListenerManagerImp">
-				<!--				
 				<void method="addListener">
-					<object class="br.com.uoutec.community.ediacaran.ProxyEdiacaranEventListener">
-						<void method="setEventListerClass">
-							<string>br.com.uoutec.community.ediacaran.system.WebEdiacaranListener</string>
-						</void>
-					</object>
+					<object class="br.com.uoutec.community.ediacaran.weld.tomcat.TomcatRegisterContainerEventListener"/>
 				</void>
-				-->
 			</object>
 		</void>
 
@@ -44,7 +38,17 @@
 		</void>
 		
 		<void property="pluginClassLoaderFactory">
-			<object class="br.com.uoutec.community.ediacaran.weld.BuilderClassLoaderFactory"/>
+			<object class="br.com.uoutec.community.ediacaran.weld.BuilderClassLoaderFactory">
+				<void method="addIncludePluginClassPathMatch">
+					<string>.*persistence.*</string>
+				</void>
+				<void method="addIncludePluginClassPathMatch">
+					<string>.*plugin.*</string>
+				</void>
+				<void method="addIncludePluginClassPathMatch">
+					<string>.*filter.*</string>
+				</void>
+			</object>
 		</void>
 		
 		<!--  
@@ -86,6 +90,12 @@
 			<object class="br.com.uoutec.community.ediacaran.plugins.FileSystemPluginsSearch"/>
 		</void>
 
+		<!--
+		<void method="addEntity">
+			<object class="br.com.uoutec.community.ediacaran.web.SecurityProviderImp"/>
+			<array class="java.lang.Class" length="0"/>
+		</void>
+		-->
 		<!-- 
 		<void method="setSystemProperty">
 			<string>java.util.logging.manager</string>
