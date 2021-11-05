@@ -283,7 +283,8 @@ public class EdiacaranTestRunner extends Runner{
 
 		Map<String,Object> params = getParameters();
 		
-		ediacaranBootstrap.startApplication(params);
+		ediacaranBootstrap.loadApplication(params);
+		ediacaranBootstrap.startApplication();
 		
 		//this.listeners = ediacaranBootstrap.getListenerManager();
 		this.pluginManager = ediacaranBootstrap.getPluginManager();
