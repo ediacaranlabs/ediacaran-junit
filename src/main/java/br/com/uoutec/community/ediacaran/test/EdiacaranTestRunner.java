@@ -132,8 +132,6 @@ public class EdiacaranTestRunner extends Runner{
 		
 		startApplication();
 		
-		Object testObject = createTestObject();
-		
         for (Method method : testClass.getMethods()) {
         	
             if (method.isAnnotationPresent(Test.class)) {
@@ -142,7 +140,7 @@ public class EdiacaranTestRunner extends Runner{
             			.createTestDescription(testClass, method.getName()));
             	
             	try {
-            		runInContext(testObject, method, notifier);
+            		runInContext(testClass, method, notifier);
             	}
             	catch(Throwable ex) {
                 	notifier.fireTestFailure(
@@ -160,7 +158,7 @@ public class EdiacaranTestRunner extends Runner{
         
 	}
 
-	private void runInContext(Object testObject, Method method, 
+	private void runInContext(Class<?> testClass, Method method, 
 			RunNotifier notifier) throws Throwable {
 		
 		Map<String,Object> contextVars = getPluginConfigVars(this.pluginManager, testClass, method);
@@ -178,6 +176,10 @@ public class EdiacaranTestRunner extends Runner{
 		}
     	
     	try {
+    		testClass = getClassContext(testClass);
+    		method = getMethodContext(testClass, method);
+    		
+    		Object testObject = createTestObject(testClass);
     		runBare(testObject, method, notifier);
     	}
     	finally {
@@ -187,6 +189,24 @@ public class EdiacaranTestRunner extends Runner{
     		}
     	}
     	
+	}
+	
+	private Method getMethodContext(Class<?> contextClass, Method method) throws NoSuchMethodException, SecurityException {
+		
+		Class<?>[] params = method.getParameterTypes();
+		Class<?>[] contextParams = new Class<?>[params.length];
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		
+		for(int i=0;i<params.length;i++) {
+			try {
+				contextParams[i] = classLoader.loadClass(params[i].getName());
+			}
+			catch(Throwable ex) {
+				contextParams[i] = params[i];
+			}
+		}
+		
+		return contextClass.getMethod(method.getName(), contextParams);
 	}
 	
 	private void runBare(Object testObject, Method method, 
@@ -219,7 +239,7 @@ public class EdiacaranTestRunner extends Runner{
     	}
 	}
 	
-	private Object createTestObject() {
+	private Object createTestObject(Class<?> testClass) {
 		
     	Object testObject;
     	
@@ -234,6 +254,15 @@ public class EdiacaranTestRunner extends Runner{
     	
 	}
 
+	private Class<?> getClassContext(Class<?> testClass) {
+    	try {
+    		return Thread.currentThread().getContextClassLoader().loadClass(testClass.getName());
+    	}
+    	catch(Exception e) {
+    		throw new RuntimeException(e);
+    	}
+	}
+	
 	private void executeTest(Object testObject, Method method, 
 			RunNotifier notifier) throws Throwable {
 		
