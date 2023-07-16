@@ -11,6 +11,6 @@ public @interface ApplicationConfigParameterTest {
 
 	String paramName();
 	
-	String paramValue();
+	String paramValue() default "";
 	
 }

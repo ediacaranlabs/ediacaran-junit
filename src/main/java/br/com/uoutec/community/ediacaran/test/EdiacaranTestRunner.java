@@ -1,10 +1,12 @@
 package br.com.uoutec.community.ediacaran.test;
 
 import java.beans.XMLDecoder;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -130,7 +132,12 @@ public class EdiacaranTestRunner extends Runner{
 	@Override
 	public void run(RunNotifier notifier) {
 		
-		startApplication();
+		try {
+			startApplication();
+		}
+		catch(Throwable ex) {
+			throw new RuntimeException(ex);
+		}
 		
         for (Method method : testClass.getMethods()) {
         	
@@ -278,7 +285,7 @@ public class EdiacaranTestRunner extends Runner{
 		
 	}
 	
-	private void startApplication() {
+	private void startApplication() throws Throwable{
 		
 		ResourceLoader resourceLoader = new DefaultResourceLoader();
 		
@@ -312,16 +319,17 @@ public class EdiacaranTestRunner extends Runner{
 
 		Map<String,Object> params = getParameters();
 		
+		applyDefaultConfiguration(params);
+		
 		ediacaranBootstrap.loadApplication(params);
 		ediacaranBootstrap.startApplication();
 		
-		//this.listeners = ediacaranBootstrap.getListenerManager();
 		this.pluginManager = ediacaranBootstrap.getPluginManager();
 	}
 	
 	private String getConfigPath() {
 		ApplicationConfigTest config = testClass.getDeclaredAnnotation(ApplicationConfigTest.class);
-		return config == null? ResourceLoader.CLASSPATH_URL_PREFIX + "META-INF/ediacaran-config.xml" : config.value();
+		return config == null? "ediacaran/config/ediacaran-config.xml" : config.value();
 	}
 
 	private Map<String,Object> getParameters() {
@@ -345,6 +353,46 @@ public class EdiacaranTestRunner extends Runner{
 		return r;
 	}
 
+	private void applyDefaultConfiguration(Map<String, Object> contextParams) throws MalformedURLException {
+		
+			if(!contextParams.containsKey("app")) {
+					contextParams.put(
+						"app",
+						"ediacaran" + File.separator + 
+						"config" + File.separator +
+						"ediacaran-config.xml"
+					);
+			}
+			
+			if(!contextParams.containsKey(EdiacaranBootstrap.CONFIG_FILE_VAR)) {
+				contextParams.put(
+					EdiacaranBootstrap.CONFIG_FILE_VAR, 
+					new File(System.getProperty("user.dir") + File.separator + 
+					"ediacaran" + File.separator + 
+					"config" + File.separator +
+					"ediacaran-dev.properties").toURI().toURL().toExternalForm()
+				);
+			}
+			
+			if(!contextParams.containsKey(EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR)) {
+				contextParams.put(
+					EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR, 
+					new File(System.getProperty("user.dir") + File.separator + 
+					"ediacaran" + File.separator + 
+					"config" + File.separator +
+					"log4j.configuration").toURI().toURL().toExternalForm()
+				);
+			}
+		
+			if(!contextParams.containsKey(EdiacaranBootstrap.BASE_PATH_PROPERTY)) {
+				contextParams.put(
+					EdiacaranBootstrap.BASE_PATH_PROPERTY, 
+					"ediacaran" + File.separator 
+				);
+			}
+				
+	}
+	
 	private Map<String,Object> getPluginConfigVars(PluginManager pluginManager, Class<?> clazz, Method m){
 		
 		PluginContext context = m != null? m.getDeclaredAnnotation(PluginContext.class) : null;
