@@ -183,8 +183,8 @@ public class EdiacaranTestRunner extends Runner{
 		}
     	
     	try {
-    		testClass = getClassContext(testClass);
-    		method = getMethodContext(testClass, method);
+    		testClass = getClassContext(testClass, classLoader);
+    		method = getMethodContext(testClass, method, classLoader);
     		
     		Object testObject = createTestObject(testClass);
     		runBare(testObject, method, notifier);
@@ -198,11 +198,10 @@ public class EdiacaranTestRunner extends Runner{
     	
 	}
 	
-	private Method getMethodContext(Class<?> contextClass, Method method) throws NoSuchMethodException, SecurityException {
+	private Method getMethodContext(Class<?> contextClass, Method method, ClassLoader classLoader) throws NoSuchMethodException, SecurityException {
 		
 		Class<?>[] params = method.getParameterTypes();
 		Class<?>[] contextParams = new Class<?>[params.length];
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		
 		for(int i=0;i<params.length;i++) {
 			try {
@@ -261,9 +260,9 @@ public class EdiacaranTestRunner extends Runner{
     	
 	}
 
-	private Class<?> getClassContext(Class<?> testClass) {
+	private Class<?> getClassContext(Class<?> testClass, ClassLoader classLoader) {
     	try {
-    		return Thread.currentThread().getContextClassLoader().loadClass(testClass.getName());
+    		return classLoader.loadClass(testClass.getName());
     	}
     	catch(Exception e) {
     		throw new RuntimeException(e);
