@@ -12,7 +12,10 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+import org.junit.jupiter.api.extension.TestInstanceFactory;
+import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
+import org.junit.jupiter.api.extension.TestInstantiationException;
 
 import br.com.uoutec.community.ediacaran.plugins.EntityContextPlugin;
 import br.com.uoutec.community.ediacaran.test.EdiacaranInstance;
@@ -21,7 +24,7 @@ import br.com.uoutec.community.ediacaran.test.PluginContext;
 public class EdiacaranJUnit 
 	implements TestInstancePostProcessor, 
 	InvocationInterceptor, BeforeAllCallback, AfterAllCallback, 
-	BeforeEachCallback, AfterEachCallback, ParameterResolver {
+	BeforeEachCallback, AfterEachCallback, ParameterResolver, TestInstanceFactory {
 
 	private EdiacaranInstance ediacaran;
 	
@@ -106,10 +109,12 @@ public class EdiacaranJUnit
 				);
 		
 		try {
-			return ediacaran.execute(()->{
+			Object param = ediacaran.execute(()->{
 				Class<?> contextType = Thread.currentThread().getContextClassLoader().loadClass(type.getName());
 				return EntityContextPlugin.getEntity(contextType);
 			}, context);
+			
+			return param;
 		}
 		catch(Throwable ex) {
 			throw new ParameterResolutionException("parameter error", ex);
@@ -124,6 +129,31 @@ public class EdiacaranJUnit
 		}
 	
 		return context == null? null : context.value();
+	}
+
+	@Override
+	public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
+			throws TestInstantiationException {
+		
+		Class<?> type = factoryContext.getTestClass();
+		
+		String context = 
+				getContextName(
+						factoryContext.getTestClass(), 
+						null
+				);
+		
+		try {
+			Object param = ediacaran.execute(()->{
+				Class<?> contextType = Thread.currentThread().getContextClassLoader().loadClass(type.getName());
+				return EntityContextPlugin.getEntity(contextType);
+			}, context);
+			
+			return param;
+		}
+		catch(Throwable ex) {
+			throw new ParameterResolutionException("parameter error", ex);
+		}
 	}
 	
 }
