@@ -20,6 +20,9 @@ import org.junit.runner.Runner;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
 
+import br.com.uoutec.application.javassist.JavassistCodeGenerator;
+import br.com.uoutec.application.proxy.CodeGenerator;
+import br.com.uoutec.application.proxy.ProxyFactory;
 import br.com.uoutec.community.ediacaran.EdiacaranBootstrap;
 import br.com.uoutec.community.ediacaran.PluginManager;
 import br.com.uoutec.community.ediacaran.plugins.EntityContextPlugin;
@@ -27,6 +30,8 @@ import br.com.uoutec.community.ediacaran.plugins.PluginInitializer;
 import br.com.uoutec.community.ediacaran.test.ApplicationConfigParameterTest;
 import br.com.uoutec.community.ediacaran.test.ApplicationConfigParametersTest;
 import br.com.uoutec.community.ediacaran.test.ApplicationConfigTest;
+import br.com.uoutec.community.ediacaran.test.EdiacaranInstance;
+import br.com.uoutec.community.ediacaran.test.JunitProxyHandler;
 import br.com.uoutec.community.ediacaran.test.PluginContext;
 import br.com.uoutec.io.resource.DefaultResourceLoader;
 import br.com.uoutec.io.resource.Resource;
@@ -35,12 +40,10 @@ import br.com.uoutec.io.resource.ResourceLoader;
 public class EdiacaranTestRunner extends Runner{
 
 	private Class<?> testClass;
+
+	private CodeGenerator codeGenerator;
 	
-	private EdiacaranBootstrap ediacaranBootstrap;
-	
-	//private EdiacaranListeners listeners;
-	
-	private PluginManager pluginManager;
+	private EdiacaranInstance ediacaran;
 	
 	private Method before;
 	
@@ -56,7 +59,9 @@ public class EdiacaranTestRunner extends Runner{
     	
     	this.runInContext = false;
     	
-    	this.testClass = testClass;
+    	this.testClass     = testClass;
+		this.ediacaran     = new EdiacaranInstance();
+		this.codeGenerator = new JavassistCodeGenerator();
     	
     	for(Method m: testClass.getDeclaredMethods()) {
     		if(m.isAnnotationPresent(Before.class)) {
@@ -67,9 +72,11 @@ public class EdiacaranTestRunner extends Runner{
     			after = m;
     		}
     	}
+    	
     }
     
     private void before(Object test, RunNotifier notifier) throws Throwable {
+    	
     	if(before == null) {
     		return;
     	}
@@ -137,11 +144,13 @@ public class EdiacaranTestRunner extends Runner{
 	public void run(RunNotifier notifier) {
 		
 		try {
-			startApplication();
+			ediacaran.start(testClass);
 		}
 		catch(Throwable ex) {
 			throw new RuntimeException(ex);
 		}
+		
+		Object testObject = createTestObject(testClass);
 		
         for (Method method : testClass.getMethods()) {
         	
@@ -169,36 +178,9 @@ public class EdiacaranTestRunner extends Runner{
         
 	}
 
-	private void runInContext(Class<?> testClass, Method method, 
+	private void runInContext(Object testObject, Method method, 
 			RunNotifier notifier) throws Throwable {
 		
-		Map<String,Object> contextVars = getPluginConfigVars(this.pluginManager, testClass, method);
-		ClassLoader classLoader = null;
-		
-		if(contextVars != null) {
-			classLoader = (ClassLoader)contextVars.get(PluginInitializer.CLASS_LOADER);
-		}
-		 
-    	ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
-    	
-		if(contextVars != null) {
-			Thread.currentThread().setContextClassLoader(classLoader);
-    		runInContext = true;
-		}
-    	
-    	try {
-    		testClass = getClassContext(testClass, classLoader);
-    		method = getMethodContext(testClass, method, classLoader);
-    		
-    		Object testObject = createTestObject(testClass);
-    		runBare(testObject, method, notifier);
-    	}
-    	finally {
-    		if(contextVars != null) {
-    			Thread.currentThread().setContextClassLoader(oldClassLoader);
-        		runInContext = false;
-    		}
-    	}
     	
 	}
 	
@@ -250,18 +232,8 @@ public class EdiacaranTestRunner extends Runner{
 	}
 	
 	private Object createTestObject(Class<?> testClass) {
-		
-    	Object testObject;
-    	
-    	try {
-    		testObject = testClass.newInstance();
-    	}
-    	catch(Exception e) {
-    		throw new RuntimeException(e);
-    	}
-
-    	return testObject;
-    	
+		ProxyFactory proxyFactory = codeGenerator.getProxyFactory(testClass);
+		return proxyFactory.getNewProxy(new JunitProxyHandler(ediacaran));
 	}
 
 	private Class<?> getClassContext(Class<?> testClass, ClassLoader classLoader) {
@@ -287,123 +259,5 @@ public class EdiacaranTestRunner extends Runner{
 		}
 		
 	}
-	
-	private void startApplication() throws Throwable{
-		
-		ResourceLoader resourceLoader = new DefaultResourceLoader();
-		
-		String config = getConfigPath();
-		
-		InputStream in = null;
-		try {
-			Resource resource = resourceLoader.getResource(config);
-			
-			if(resource == null) {
-				throw new RuntimeException("not found: " + config);
-			}
-			
-			in = resource.getInputStream();
-			XMLDecoder xml          = new XMLDecoder(in);
-			this.ediacaranBootstrap = (EdiacaranBootstrap) xml.readObject();
-			xml.close();
-		}
-		catch(IOException ex) {
-			throw new RuntimeException(ex);
-		}
-		finally {
-			try {
-				if(in != null) 
-					in.close();
-			}
-			catch(Throwable ex) {
-			}
-		}
-		
 
-		Map<String,Object> params = getParameters();
-		
-		applyDefaultConfiguration(params);
-		
-		ediacaranBootstrap.loadApplication(params);
-		ediacaranBootstrap.startApplication();
-		
-		this.pluginManager = ediacaranBootstrap.getPluginManager();
-	}
-	
-	private String getConfigPath() {
-		ApplicationConfigTest config = testClass.getDeclaredAnnotation(ApplicationConfigTest.class);
-		return config == null? "ediacaran/config/ediacaran-config.xml" : config.value();
-	}
-
-	private Map<String,Object> getParameters() {
-		
-		Map<String,Object> r = new HashMap<String,Object>();
-		
-		ApplicationConfigParametersTest params = testClass.getDeclaredAnnotation(ApplicationConfigParametersTest.class);
-		
-		if(params != null) {
-			for(ApplicationConfigParameterTest p: params.value()) {
-				r.put(p.paramName(), p.paramValue());
-			}
-		}
-		
-		ApplicationConfigParameterTest param = testClass.getDeclaredAnnotation(ApplicationConfigParameterTest.class);
-
-		if(param != null) {
-			r.put(param.paramName(), param.paramValue());
-		}
-		
-		return r;
-	}
-
-	private void applyDefaultConfiguration(Map<String, Object> contextParams) throws MalformedURLException {
-		
-			if(!contextParams.containsKey("app")) {
-					contextParams.put(
-						"app",
-						"ediacaran" + File.separator + 
-						"config" + File.separator +
-						"ediacaran-config.xml"
-					);
-			}
-			
-			if(!contextParams.containsKey(EdiacaranBootstrap.CONFIG_FILE_VAR)) {
-				contextParams.put(
-					EdiacaranBootstrap.CONFIG_FILE_VAR, 
-					new File(System.getProperty("user.dir") + File.separator + 
-					"ediacaran" + File.separator + 
-					"config" + File.separator +
-					"ediacaran-dev.properties").toURI().toURL().toExternalForm()
-				);
-			}
-			
-			if(!contextParams.containsKey(EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR)) {
-				contextParams.put(
-					EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR, 
-					new File(System.getProperty("user.dir") + File.separator + 
-					"ediacaran" + File.separator + 
-					"config" + File.separator +
-					"log4j.configuration").toURI().toURL().toExternalForm()
-				);
-			}
-		
-			if(!contextParams.containsKey(EdiacaranBootstrap.BASE_PATH_PROPERTY)) {
-				contextParams.put(
-					EdiacaranBootstrap.BASE_PATH_PROPERTY, 
-					"ediacaran" + File.separator 
-				);
-			}
-				
-	}
-	
-	private Map<String,Object> getPluginConfigVars(PluginManager pluginManager, Class<?> clazz, Method m){
-		
-		PluginContext context = m != null? m.getDeclaredAnnotation(PluginContext.class) : null;
-		
-		if(context == null && clazz.isAnnotationPresent(PluginContext.class)) {
-			context = clazz.getDeclaredAnnotation(PluginContext.class);
-		}
-	
-		return context == null? null : pluginManager.getPluginConfigVars(context.value());
-	}
 }
