@@ -17,19 +17,25 @@ import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
-import br.com.uoutec.community.ediacaran.plugins.EntityContextPlugin;
+import br.com.uoutec.application.javassist.JavassistCodeGenerator;
+import br.com.uoutec.application.proxy.CodeGenerator;
+import br.com.uoutec.application.proxy.ProxyFactory;
 import br.com.uoutec.community.ediacaran.test.EdiacaranInstance;
+import br.com.uoutec.community.ediacaran.test.JunitProxyHandler;
 import br.com.uoutec.community.ediacaran.test.PluginContext;
 
-public class EdiacaranJUnit 
+public class EdiacaranExt 
 	implements TestInstancePostProcessor, 
 	InvocationInterceptor, BeforeAllCallback, AfterAllCallback, 
 	BeforeEachCallback, AfterEachCallback, ParameterResolver, TestInstanceFactory {
 
+	private CodeGenerator codeGenerator;
+	
 	private EdiacaranInstance ediacaran;
 	
-	public EdiacaranJUnit() {
+	public EdiacaranExt() {
 		ediacaran = new EdiacaranInstance();
+		codeGenerator = new JavassistCodeGenerator();
 	}
 	
 	@Override
@@ -88,38 +94,14 @@ public class EdiacaranJUnit
 	@Override
 	public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
 			throws ParameterResolutionException {
-		//return parameterContext.getParameter().getType().equals(EmployeeJdbcDao.class);
-		return getContextName(
-				parameterContext.getDeclaringExecutable().getDeclaringClass(), 
-				parameterContext.getDeclaringExecutable().getAnnotation(PluginContext.class)
-		) != null;
+		return true;
 	}
 
 
 	@Override
 	public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
 			throws ParameterResolutionException {
-		
-		Class<?> type = parameterContext.getParameter().getType();
-		
-		String context = 
-				getContextName(
-						parameterContext.getDeclaringExecutable().getDeclaringClass(), 
-						parameterContext.getDeclaringExecutable().getAnnotation(PluginContext.class)
-				);
-		
-		try {
-			Object param = ediacaran.execute(()->{
-				Class<?> contextType = Thread.currentThread().getContextClassLoader().loadClass(type.getName());
-				return EntityContextPlugin.getEntity(contextType);
-			}, context);
-			
-			return param;
-		}
-		catch(Throwable ex) {
-			throw new ParameterResolutionException("parameter error", ex);
-		}
-		
+		return null;
 	}
 	
 	private String getContextName(Class<?> clazz, PluginContext context){
@@ -137,23 +119,9 @@ public class EdiacaranJUnit
 		
 		Class<?> type = factoryContext.getTestClass();
 		
-		String context = 
-				getContextName(
-						factoryContext.getTestClass(), 
-						null
-				);
+		ProxyFactory proxyFactory = codeGenerator.getProxyFactory(type);
 		
-		try {
-			Object param = ediacaran.execute(()->{
-				Class<?> contextType = Thread.currentThread().getContextClassLoader().loadClass(type.getName());
-				return EntityContextPlugin.getEntity(contextType);
-			}, context);
-			
-			return param;
-		}
-		catch(Throwable ex) {
-			throw new ParameterResolutionException("parameter error", ex);
-		}
+		return proxyFactory.getNewProxy(new JunitProxyHandler(ediacaran));
 	}
 	
 }
