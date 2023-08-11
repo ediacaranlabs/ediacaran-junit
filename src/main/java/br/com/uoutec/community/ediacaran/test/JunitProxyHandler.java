@@ -78,7 +78,11 @@ public class JunitProxyHandler implements ProxyHandler{
 			context = clazz.getDeclaredAnnotation(PluginContext.class);
 		}
 	
-		return context == null? null : context.value();
+		if(context == null) {
+			throw new IllegalStateException("Context not found! Use @PluginContext.");
+		}
+		
+		return context.value();
 	}
 	
 	private void runInContext(Class<?> testClass, Method method) throws Exception {
@@ -88,6 +92,10 @@ public class JunitProxyHandler implements ProxyHandler{
 		method = getMethodContext(testClass, method, classLoader);
 		
 		Object testObject = createTestObject(testClass);
+		
+		if(testObject == null) {
+			throw new IllegalStateException("Instantiation of bean failed: " + testClass.getName());
+		}
 		executeMethod(testObject, method);
 		
 	}
