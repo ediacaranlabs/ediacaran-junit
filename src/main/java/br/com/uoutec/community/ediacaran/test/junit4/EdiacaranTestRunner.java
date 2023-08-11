@@ -1,19 +1,12 @@
 package br.com.uoutec.community.ediacaran.test.junit4;
 
-import java.beans.XMLDecoder;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Named;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
@@ -23,19 +16,8 @@ import org.junit.runner.notification.RunNotifier;
 import br.com.uoutec.application.javassist.JavassistCodeGenerator;
 import br.com.uoutec.application.proxy.CodeGenerator;
 import br.com.uoutec.application.proxy.ProxyFactory;
-import br.com.uoutec.community.ediacaran.EdiacaranBootstrap;
-import br.com.uoutec.community.ediacaran.PluginManager;
-import br.com.uoutec.community.ediacaran.plugins.EntityContextPlugin;
-import br.com.uoutec.community.ediacaran.plugins.PluginInitializer;
-import br.com.uoutec.community.ediacaran.test.ApplicationConfigParameterTest;
-import br.com.uoutec.community.ediacaran.test.ApplicationConfigParametersTest;
-import br.com.uoutec.community.ediacaran.test.ApplicationConfigTest;
 import br.com.uoutec.community.ediacaran.test.EdiacaranInstance;
 import br.com.uoutec.community.ediacaran.test.JunitProxyHandler;
-import br.com.uoutec.community.ediacaran.test.PluginContext;
-import br.com.uoutec.io.resource.DefaultResourceLoader;
-import br.com.uoutec.io.resource.Resource;
-import br.com.uoutec.io.resource.ResourceLoader;
 
 public class EdiacaranTestRunner extends Runner{
 
@@ -45,11 +27,13 @@ public class EdiacaranTestRunner extends Runner{
 	
 	private EdiacaranInstance ediacaran;
 	
+	private Method beforeAll;
+	
 	private Method before;
 	
-	private Method after;
+	private Method afterAll;
 	
-	private boolean runInContext;
+	private Method after;
 	
     public EdiacaranTestRunner(Class<?> testClass) {
         init(testClass);
@@ -57,13 +41,19 @@ public class EdiacaranTestRunner extends Runner{
     
     private void init(Class<?> testClass) {
     	
-    	this.runInContext = false;
-    	
     	this.testClass     = testClass;
 		this.ediacaran     = new EdiacaranInstance();
 		this.codeGenerator = new JavassistCodeGenerator();
     	
     	for(Method m: testClass.getDeclaredMethods()) {
+    		if(m.isAnnotationPresent(BeforeClass.class)) {
+    			beforeAll = m;
+    		}
+    		else
+    		if(m.isAnnotationPresent(AfterClass.class)) {
+    			afterAll = m;
+    		}
+    		else
     		if(m.isAnnotationPresent(Before.class)) {
     			before = m;
     		}
@@ -75,189 +65,168 @@ public class EdiacaranTestRunner extends Runner{
     	
     }
     
-    private void before(Object test, RunNotifier notifier) throws Throwable {
-    	
-    	if(before == null) {
-    		return;
-    	}
-    	
-		try {
-			executeMethod(test, before);
-		}
-		catch (InvocationTargetException e) {
-			throw e.getTargetException();
-		}
-		catch (Throwable e) {
-			throw e;
-		}
-    }
 
-    private void after(Object test, RunNotifier notifier) throws Throwable {
-    	
-    	if(after == null) {
-    		return;
-    	}
-    	
-		try {
-			executeMethod(test, after);
-		}
-		catch (InvocationTargetException e) {
-			throw e.getTargetException();
-		}
-		catch (Throwable e) {
-			throw e;
-		}
-    }
-    
-    private void executeMethod(Object o, Method m
-    		) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    	
-    	Class<?>[] paramsType = m.getParameterTypes();
-    	Object[] paramsVals = new Object[paramsType.length];
-    	
-    	if(paramsType.length > 0 && !runInContext) {
-    		throw new RuntimeException("plugin context must be informed!");
-    	}
-    	
-    	for(int i=0;i< paramsType.length;i++) {
-    		Object value = null;
-    		Class<?> paramType = paramsType[i];
-    		Named named = m.getAnnotatedParameterTypes()[i].getAnnotation(Named.class);
-    		
-			value = named != null? 
-					EntityContextPlugin.getEntity(named.value(), paramType) :
-					EntityContextPlugin.getEntity(paramType);
-			
-			paramsVals[i] = value;
-    	}
-    	
-    	m.invoke(o, paramsVals);
-    }
-    
 	@Override
 	public Description getDescription() {
 		return Description
 		          .createTestDescription(testClass, "Ediacaran runner");
 	}
 
-	@Override
-	public void run(RunNotifier notifier) {
-		
+	protected void init(RunNotifier notifier) {
 		try {
 			ediacaran.start(testClass);
 		}
 		catch(Throwable ex) {
 			throw new RuntimeException(ex);
 		}
+	}
+
+    protected void beforeAll(Object test, RunNotifier notifier){
+    	
+    	if(beforeAll == null) {
+    		return;
+    	}
+    	
+		try {
+			run(beforeAll, test, notifier);
+		}
+		catch (Throwable e) {
+        	notifier.fireTestFailure(
+        			new Failure(Description
+        					.createTestDescription(testClass, beforeAll.getName()), e));
+        	throw new RuntimeException("beforeClass", e);
+		}
 		
-		Object testObject = createTestObject(testClass);
+    }
+	
+    protected void afterAll(Object test, RunNotifier notifier) {
+    	
+    	if(afterAll == null) {
+    		return;
+    	}
+    	
+		try {
+			run(afterAll, test, notifier);
+		}
+		catch (Throwable e) {
+        	notifier.fireTestFailure(
+        			new Failure(Description
+        					.createTestDescription(testClass, afterAll.getName()), e));
+        	throw new RuntimeException("afterAll", e);
+		}
+		
+    }
+	
+	
+    protected void before(Object test, RunNotifier notifier) {
+    	
+    	if(before == null) {
+    		return;
+    	}
+    	
+		try {
+			run(before, test, notifier);
+		}
+		catch (Throwable e) {
+        	notifier.fireTestFailure(
+        			new Failure(Description
+        					.createTestDescription(testClass, before.getName()), e));
+        	throw new RuntimeException("before", e);
+		}
+		
+    }
+	
+    protected void after(Object test, RunNotifier notifier) {
+    	
+    	if(after == null) {
+    		return;
+    	}
+    	
+		try {
+			run(after, test, notifier);
+		}
+		catch (Throwable e) {
+        	notifier.fireTestFailure(
+        			new Failure(Description
+        					.createTestDescription(testClass, after.getName()), e));
+        	throw new RuntimeException("after", e);
+		}
+		
+    }
+    
+	protected void destroy(RunNotifier notifier) {
+		try {
+			ediacaran.destroy();
+		}
+		catch(Throwable ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+	
+	protected Object createTestInstance(RunNotifier notifier) {
+		return createTestObject(testClass);
+	}
+	
+	@Override
+	public void run(RunNotifier notifier) {
+		
+		init(notifier);
+		try {
+			Object test = createTestInstance(notifier);
+			beforeAll(test, notifier);
+			run(test, notifier);
+			afterAll(test, notifier);
+		}
+		finally {
+			destroy(notifier);
+		}
+		
+	}
+
+	protected void run(Object test, RunNotifier notifier) {
 		
         for (Method method : testClass.getMethods()) {
         	
             if (method.isAnnotationPresent(Test.class)) {
 
-            	notifier.fireTestStarted(Description
-            			.createTestDescription(testClass, method.getName()));
-            	
+        		before(test, notifier);
+        		
             	try {
-            		runInContext(testClass, method, notifier);
+                	notifier.fireTestStarted(Description
+                			.createTestDescription(testClass, method.getName()));
+                	
+            		run(method, test, notifier);
+            		
+                	notifier.fireTestFinished(Description
+                			.createTestDescription(testClass, method.getName()));
             	}
             	catch(Throwable ex) {
                 	notifier.fireTestFailure(
                 			new Failure(Description
                 					.createTestDescription(testClass, method.getName()), ex));
-                	continue;
             	}
-            	
-            	notifier.fireTestFinished(Description
-            			.createTestDescription(testClass, method.getName()));
 
+        		after(test, notifier);
+        		
             }
             
         }
-        
+		
 	}
 
-	private void runInContext(Object testObject, Method method, 
-			RunNotifier notifier) throws Throwable {
-		
-    	
-	}
-	
-	private Method getMethodContext(Class<?> contextClass, Method method, ClassLoader classLoader) throws NoSuchMethodException, SecurityException {
-		
-		Class<?>[] params = method.getParameterTypes();
-		Class<?>[] contextParams = new Class<?>[params.length];
-		
-		for(int i=0;i<params.length;i++) {
-			try {
-				contextParams[i] = classLoader.loadClass(params[i].getName());
-			}
-			catch(Throwable ex) {
-				contextParams[i] = params[i];
-			}
+	protected void run(Method method, Object test, RunNotifier notifier) throws Throwable {
+		Object[] params = new Object[method.getParameterCount()];
+		try {
+			method.invoke(test, params);
 		}
-		
-		return contextClass.getMethod(method.getName(), contextParams);
-	}
-	
-	private void runBare(Object testObject, Method method, 
-			RunNotifier notifier) throws Throwable {
-		
-    	Throwable exception = null;
-    	
-    	before(testObject, notifier);
-    	
-    	try {
-    		executeTest(testObject, method, notifier);
-    	}
-    	catch(Throwable ex) {
-    		exception = ex;
-    	}
-    	finally {
-    		try {
-    			after(testObject, notifier);
-    		}
-    		catch(Throwable ex) {
-    			if(exception == null) {
-    				exception = ex;
-    			}
-    				
-    		}
-    	}
-    	
-    	if (exception != null) { 
-    		throw exception;	
-    	}
+		catch(InvocationTargetException ex) {
+			throw ex.getTargetException();
+		}
 	}
 	
 	private Object createTestObject(Class<?> testClass) {
 		ProxyFactory proxyFactory = codeGenerator.getProxyFactory(testClass);
 		return proxyFactory.getNewProxy(new JunitProxyHandler(ediacaran));
 	}
-
-	private Class<?> getClassContext(Class<?> testClass, ClassLoader classLoader) {
-    	try {
-    		return classLoader.loadClass(testClass.getName());
-    	}
-    	catch(Exception e) {
-    		throw new RuntimeException(e);
-    	}
-	}
 	
-	private void executeTest(Object testObject, Method method, 
-			RunNotifier notifier) throws Throwable {
-		
-		try {
-			executeMethod(testObject, method);
-		}
-		catch (InvocationTargetException e) {
-			throw e.getTargetException();
-		}
-		catch (Throwable e) {
-			throw e;
-		}
-		
-	}
-
 }
