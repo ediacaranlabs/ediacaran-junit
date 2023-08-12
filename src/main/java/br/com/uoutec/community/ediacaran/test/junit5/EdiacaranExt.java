@@ -76,7 +76,11 @@ public class EdiacaranExt
 
 	@Override
 	public void afterAll(ExtensionContext context) throws Exception {
-		ediacaran.destroy();
+		try {
+			ediacaran.destroy();
+		}
+		catch(Throwable ex) {
+		}
 	}
 
 

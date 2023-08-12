@@ -43,6 +43,19 @@ public class BeanAssertions {
 			
 			if(expectedProperty.canSet()) {
 				
+				if(expected.get(expectedProperty.getName()) == null) {
+					if(actual.get(actualProperty.getName()) != null) {
+						throw new AssertionFailedError(path + expectedProperty.getName() + " => null != " + actual.get(actualProperty.getName()));
+					}
+					else {
+						continue;
+					}
+				}
+				else
+				if(actual.get(actualProperty.getName()) == null) {
+					throw new AssertionFailedError(path + expectedProperty.getName() + " => " + actual.get(actualProperty.getName()) + " != null");
+				}
+				
 				if(expectedProperty.getType().isAssignableFrom(Map.class)) {
 					
 					if(!actualProperty.getType().isAssignableFrom(Map.class)) {
@@ -93,11 +106,13 @@ public class BeanAssertions {
 					}
 				}
 				else {
+					
 					assertEquals(
 							new Bean(expected.get(expectedProperty.getName())), 
 							new Bean(actual.get(actualProperty.getName())), 
 							path + expectedProperty.getName() + "."
 					);
+					
 				}
 			}
 		}
