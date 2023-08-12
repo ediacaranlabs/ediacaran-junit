@@ -7,11 +7,13 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import br.com.uoutec.community.ediacaran.EdiacaranBootstrap;
 import br.com.uoutec.community.ediacaran.PluginManager;
 import br.com.uoutec.community.ediacaran.plugins.PluginInitializer;
+import br.com.uoutec.community.ediacaran.test.mock.MockBeanDiscover;
 import br.com.uoutec.io.resource.DefaultResourceLoader;
 import br.com.uoutec.io.resource.Resource;
 import br.com.uoutec.io.resource.ResourceLoader;
@@ -64,11 +66,20 @@ public class EdiacaranInstance {
 		
 		applyDefaultConfiguration(params);
 		
+		MockBeanDiscover mbd = new MockBeanDiscover();
+		
+		Map<Class<?>, Object> mocks = mbd.getMocks(testClass);
+		
+		for(Entry<Class<?>, Object> e: mocks.entrySet()) {
+			ediacaranBootstrap.addEntity(e.getValue(), e.getKey());	
+		}
+		
 		ediacaranBootstrap.loadApplication(params);
 		ediacaranBootstrap.startApplication();
 		
 		this.pluginManager = ediacaranBootstrap.getPluginManager();
 	}
+	
 	
 	public Object execute(Callable<Object> value, String context) throws Throwable {
 	

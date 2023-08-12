@@ -80,6 +80,18 @@
             <scope>provided</scope>
         </dependency>
 		<dependency>
+		    <groupId>org.mockito</groupId>
+		    <artifactId>mockito-core</artifactId>
+		    <version>5.4.0</version>
+		    <scope>provided</scope>
+		</dependency>
+		<dependency>
+		    <groupId>br.com.uoutec</groupId>
+		    <artifactId>ediacaran-junit-mock</artifactId>
+		    <version>1.0.0</version>
+		    <scope>provided</scope>
+		</dependency>
+		<dependency>
 		    <groupId>junit</groupId>
 		    <artifactId>junit</artifactId>
 		    <version>4.13.1</version>
