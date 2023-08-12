@@ -18,7 +18,7 @@ public class BeanAssertions {
 
 	public static void assertBeanEquals(Object expected, Object actual) {
 		try {
-			assertEquals(new Bean(expected), new Bean(actual), "");
+			assertEquals(expected, actual, null);
 		}
 		catch(AssertionFailedError e) {
 			throw e;
@@ -26,6 +26,46 @@ public class BeanAssertions {
 		catch(Throwable e) {
 			throw new AssertionFailedError("unexpected error", e);
 		}
+	}
+	
+	private static void assertEquals(Object expected, Object actual, String path) throws Throwable {
+		
+		if(expected == null) {
+			if(actual != null) {
+				throw new AssertionFailedError(path + " => null != " + actual);
+			}
+		}
+		else
+		if(actual == null) {
+			throw new AssertionFailedError(path + " => " + actual + " != null");
+		}
+		else
+		if(expected.getClass().isAssignableFrom(Map.class)) {
+			
+			if(!actual.getClass().isAssignableFrom(Map.class)) {
+				throw new AssertionFailedError(path  + " => " + expected.getClass() + " " + actual.getClass());
+			}
+			
+			assertEquals((Map<?,?>)expected, (Map<?,?>)actual, path);
+			
+		}
+		else
+		if(expected.getClass().isAssignableFrom(Collection.class)) {
+			
+			if(!actual.getClass().isAssignableFrom(Collection.class)) {
+				throw new AssertionFailedError(path + " => " + expected.getClass() + " " + actual.getClass());
+			}
+			
+			assertEquals((Collection<?>)expected, (Collection<?>)actual, path);
+		}		
+		else
+		if(Bean.isPrimitive(expected.getClass())) {
+			Assertions.assertEquals(expected, actual);
+		}
+		else {
+			assertEquals(new Bean(expected), new Bean(actual), path == null? "" : path + ".");
+		}
+		
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -42,6 +82,8 @@ public class BeanAssertions {
 			BeanPropertyAnnotation actualProperty = (BeanPropertyAnnotation) actual.getProperty(expectedProperty.getName());
 			
 			if(expectedProperty.canSet()) {
+				
+				assertEquals(expected.get(expectedProperty.getName()), actual.get(actualProperty.getName()), path + expectedProperty.getName());
 				
 				if(expected.get(expectedProperty.getName()) == null) {
 					if(actual.get(actualProperty.getName()) != null) {
@@ -108,9 +150,9 @@ public class BeanAssertions {
 				else {
 					
 					assertEquals(
-							new Bean(expected.get(expectedProperty.getName())), 
-							new Bean(actual.get(actualProperty.getName())), 
-							path + expectedProperty.getName() + "."
+							expected.get(expectedProperty.getName()), 
+							actual.get(actualProperty.getName()), 
+							path + expectedProperty.getName()
 					);
 					
 				}
@@ -145,7 +187,7 @@ public class BeanAssertions {
             
             for(Object actualItem: a) {
             	try {
-            		assertEquals(new Bean(expectedItem), new Bean(actualItem), path + "[" + (index++) + "].");
+            		assertEquals(expectedItem, actualItem, path + "[" + (index++) + "]");
             		found = actualItem;
             		break;
             	}
@@ -182,10 +224,10 @@ public class BeanAssertions {
 
         for (Entry expectedItem: e) {
         	
-            Object actualItem = actual.get(expected.keySet());
+            Object actualItem = actual.get(expectedItem.getKey());
             
             if(actualItem != null) {
-        		assertEquals(new Bean(expectedItem), new Bean(actualItem), path + "[" + expected.keySet() + "].");
+        		assertEquals(expectedItem.getValue(), actualItem, path + "[" + expectedItem.getKey() + "]");
             }
             else{
             	throw new AssertionFailedError(expectedItem + " != null");
