@@ -40,9 +40,9 @@ public class BeanAssertions {
 			throw new AssertionFailedError(path + " => " + actual + " != null");
 		}
 		else
-		if(expected.getClass().isAssignableFrom(Map.class)) {
+		if(expected instanceof Map) {
 			
-			if(!actual.getClass().isAssignableFrom(Map.class)) {
+			if(!(actual instanceof Map)) {
 				throw new AssertionFailedError(path  + " => " + expected.getClass() + " " + actual.getClass());
 			}
 			
@@ -50,9 +50,9 @@ public class BeanAssertions {
 			
 		}
 		else
-		if(expected.getClass().isAssignableFrom(Collection.class)) {
+		if(expected instanceof Collection) {
 			
-			if(!actual.getClass().isAssignableFrom(Collection.class)) {
+			if(!(actual instanceof Collection)) {
 				throw new AssertionFailedError(path + " => " + expected.getClass() + " " + actual.getClass());
 			}
 			
@@ -68,7 +68,6 @@ public class BeanAssertions {
 		
 	}
 	
-	@SuppressWarnings("rawtypes")
 	private static void assertEquals(Bean expected, Bean actual, String path) throws Throwable {
 		
 		Assertions.assertTrue(
@@ -82,80 +81,16 @@ public class BeanAssertions {
 			BeanPropertyAnnotation actualProperty = (BeanPropertyAnnotation) actual.getProperty(expectedProperty.getName());
 			
 			if(expectedProperty.canSet()) {
-				
-				assertEquals(expected.get(expectedProperty.getName()), actual.get(actualProperty.getName()), path + expectedProperty.getName());
-				
-				if(expected.get(expectedProperty.getName()) == null) {
-					if(actual.get(actualProperty.getName()) != null) {
-						throw new AssertionFailedError(path + expectedProperty.getName() + " => null != " + actual.get(actualProperty.getName()));
-					}
-					else {
-						continue;
-					}
+
+				try {
+					assertEquals(expected.get(expectedProperty.getName()), 
+							actual.get(actualProperty.getName()), path + expectedProperty.getName());
 				}
-				else
-				if(actual.get(actualProperty.getName()) == null) {
-					throw new AssertionFailedError(path + expectedProperty.getName() + " => " + actual.get(actualProperty.getName()) + " != null");
+				catch(AssertionFailedError e) {
+					throw new AssertionFailedError(path + expectedProperty.getName(), e);
 				}
 				
-				if(expectedProperty.getType().isAssignableFrom(Map.class)) {
-					
-					if(!actualProperty.getType().isAssignableFrom(Map.class)) {
-						throw new AssertionFailedError(path + expectedProperty.getName() + " => " + expectedProperty.getType() + " " + actualProperty.getType());
-					}
-					
-					try {
-						assertEquals(
-								(Map)expected.get(expectedProperty.getName()), 
-								(Map)actual.get(actualProperty.getName()),
-								path + expectedProperty.getName()
-						);
-					}
-					catch(AssertionFailedError e) {
-						throw new AssertionFailedError(path + expectedProperty.getName(), e);
-					}
-					
-				}
-				else
-				if(expectedProperty.getType().isAssignableFrom(Collection.class)) {
-					
-					if(!actualProperty.getType().isAssignableFrom(Collection.class)) {
-						throw new AssertionFailedError(path + expectedProperty.getName() + " => " + expectedProperty.getType() + " " + actualProperty.getType());
-					}
-					
-					try {
-						assertEquals(
-								(Collection<?>)expected.get(expectedProperty.getName()), 
-								(Collection<?>)actual.get(actualProperty.getName()),
-								path + expectedProperty.getName()
-						);
-					}
-					catch(AssertionFailedError e) {
-						throw new AssertionFailedError(path + expectedProperty.getName(), e);
-					}
-					
-				}
-				else
-				if(expectedProperty.isPrimitive()) {
-					try {
-						Assertions.assertEquals(
-								expected.get(expectedProperty.getName()), 
-								actual.get(actualProperty.getName())
-						);
-					}
-					catch(AssertionFailedError e) {
-						throw new AssertionFailedError(path + expectedProperty.getName(), e);
-					}
-				}
-				else {
-					
-					assertEquals(
-							expected.get(expectedProperty.getName()), 
-							actual.get(actualProperty.getName()), 
-							path + expectedProperty.getName()
-					);
-					
-				}
+
 			}
 		}
 	}
