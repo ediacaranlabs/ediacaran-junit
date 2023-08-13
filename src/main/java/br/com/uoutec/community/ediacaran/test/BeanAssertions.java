@@ -18,7 +18,19 @@ public class BeanAssertions {
 
 	public static void assertBeanEquals(Object expected, Object actual) {
 		try {
-			assertEquals(expected, actual, null);
+			assertBeanEquals(expected, actual, (e,a,p)->Boolean.TRUE);
+		}
+		catch(AssertionFailedError e) {
+			throw e;
+		}
+		catch(Throwable e) {
+			throw new AssertionFailedError("unexpected error", e);
+		}
+	}
+
+	public static void assertBeanEquals(Object expected, Object actual, BeanAssertionsFilter filter) {
+		try {
+			assertEquals(expected, actual, filter, null);
 		}
 		catch(AssertionFailedError e) {
 			throw e;
@@ -28,7 +40,11 @@ public class BeanAssertions {
 		}
 	}
 	
-	private static void assertEquals(Object expected, Object actual, String path) throws Throwable {
+	private static void assertEquals(Object expected, Object actual, BeanAssertionsFilter filter, String path) throws Throwable {
+		
+		if(!filter.isTest(expected, actual, path)) {
+			return;
+		}
 		
 		if(expected == null) {
 			if(actual != null) {
@@ -46,7 +62,7 @@ public class BeanAssertions {
 				throw new AssertionFailedError(path  + " => " + expected.getClass() + " " + actual.getClass());
 			}
 			
-			assertEquals((Map<?,?>)expected, (Map<?,?>)actual, path);
+			assertEquals((Map<?,?>)expected, (Map<?,?>)actual, filter, path);
 			
 		}
 		else
@@ -56,19 +72,19 @@ public class BeanAssertions {
 				throw new AssertionFailedError(path + " => " + expected.getClass() + " " + actual.getClass());
 			}
 			
-			assertEquals((Collection<?>)expected, (Collection<?>)actual, path);
+			assertEquals((Collection<?>)expected, (Collection<?>)actual, filter, path);
 		}		
 		else
 		if(Bean.isPrimitive(expected.getClass())) {
 			Assertions.assertEquals(expected, actual);
 		}
 		else {
-			assertEquals(new Bean(expected), new Bean(actual), path == null? "" : path + ".");
+			assertEquals(new Bean(expected), new Bean(actual), filter, path == null? "" : path + ".");
 		}
 		
 	}
 	
-	private static void assertEquals(Bean expected, Bean actual, String path) throws Throwable {
+	private static void assertEquals(Bean expected, Bean actual, BeanAssertionsFilter filter, String path) throws Throwable {
 		
 		Assertions.assertTrue(
 				actual.getClassType().isAssignableFrom(expected.getClassType()), 
@@ -84,7 +100,7 @@ public class BeanAssertions {
 
 				try {
 					assertEquals(expected.get(expectedProperty.getName()), 
-							actual.get(actualProperty.getName()), path + expectedProperty.getName());
+							actual.get(actualProperty.getName()), filter, path + expectedProperty.getName());
 				}
 				catch(AssertionFailedError e) {
 					throw new AssertionFailedError(path + expectedProperty.getName(), e);
@@ -95,7 +111,7 @@ public class BeanAssertions {
 		}
 	}
 	
-	private static void assertEquals(Collection<?> expected, Collection<?> actual, String path) throws Throwable {
+	private static void assertEquals(Collection<?> expected, Collection<?> actual, BeanAssertionsFilter filter, String path) throws Throwable {
 		
         if (actual == null && expected == null) {
         	return;
@@ -122,7 +138,7 @@ public class BeanAssertions {
             
             for(Object actualItem: a) {
             	try {
-            		assertEquals(expectedItem, actualItem, path + "[" + (index++) + "]");
+            		assertEquals(expectedItem, actualItem, filter, path + "[" + (index++) + "]");
             		found = actualItem;
             		break;
             	}
@@ -141,7 +157,7 @@ public class BeanAssertions {
     }
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static void assertEquals(Map expected, Map actual, String path) throws Throwable {
+	private static void assertEquals(Map expected, Map actual, BeanAssertionsFilter filter, String path) throws Throwable {
 		
         if (actual == null && expected == null) {
         	return;
@@ -162,7 +178,7 @@ public class BeanAssertions {
             Object actualItem = actual.get(expectedItem.getKey());
             
             if(actualItem != null) {
-        		assertEquals(expectedItem.getValue(), actualItem, path + "[" + expectedItem.getKey() + "]");
+        		assertEquals(expectedItem.getValue(), actualItem, filter, path + "[" + expectedItem.getKey() + "]");
             }
             else{
             	throw new AssertionFailedError(expectedItem + " != null");
@@ -170,5 +186,12 @@ public class BeanAssertions {
         }
 
     }
+
+	@FunctionalInterface
+	public static interface BeanAssertionsFilter {
+		
+		boolean isTest(Object expected, Object actual, String path);
+		
+	}
 	
 }
