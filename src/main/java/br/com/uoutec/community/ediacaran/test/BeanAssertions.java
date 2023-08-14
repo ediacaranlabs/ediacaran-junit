@@ -1,12 +1,14 @@
 package br.com.uoutec.community.ediacaran.test;
 
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.opentest4j.AssertionFailedError;
@@ -16,6 +18,66 @@ import br.com.uoutec.application.bean.BeanPropertyAnnotation;
 
 public class BeanAssertions {
 
+	public static void assertTextEquals(String expected, String actual) {
+		expected = expected
+				.replaceAll("\\r+", "")
+				.replaceAll("\\t+", "")
+				.replaceAll("\\n+", "")
+				.replaceAll("\\s+\\<", "<")
+				.replaceAll("\\>\\s+", ">")
+				.replaceAll("\\s+", " ")
+				.trim();
+		
+		actual = actual
+				.replaceAll("\\r+", "")
+				.replaceAll("\\t+", "")
+				.replaceAll("\\n+", "")
+				.replaceAll("\\s+\\<", "<")
+				.replaceAll("\\>\\s+", ">")
+				.replaceAll("\\s+", " ")
+				.trim();
+		
+		Assertions.assertEquals(expected, actual);
+	}
+	
+	public static void assertEquals(InputStream expected, InputStream actual) {
+		int expectedL = 0;
+		int actualL = 0;
+		int expectedTotal = 0;
+		int actualTotal = 0;
+		byte[] expectedBuf = new byte[1024];
+		byte[] actualBuf   = new byte[1024];
+		
+		try {
+			while((expectedL = expected.read(expectedBuf, 0, expectedBuf.length)) > 0) {
+				
+				actualL = actual.read(actualBuf, 0, actualBuf.length);
+				
+				expectedTotal += expectedL;
+				actualTotal += actualL;
+				
+				Assertions.assertEquals(expectedTotal, actualTotal);
+				Assertions.assertArrayEquals(Arrays.copyOf(expectedBuf,expectedL), Arrays.copyOf(actualBuf,actualL));
+			}
+		}
+		catch(Throwable ex) {
+			throw new AssertionFailedError("unexpected error", ex);
+		}
+		finally {
+			try {
+				expected.close();
+			}
+			catch(Throwable ex) {
+			}
+			try {
+				actual.close();
+			}
+			catch(Throwable ex) {
+			}
+		}
+		
+	}
+	
 	public static void assertBeanEquals(Object expected, Object actual) {
 		try {
 			assertBeanEquals(expected, actual, (e,a,p)->Boolean.TRUE);
