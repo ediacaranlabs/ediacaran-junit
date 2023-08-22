@@ -61,11 +61,10 @@ public class EdiacaranInstance {
 			}
 		}
 		
-
 		Map<String,Object> params = getParameters(testClass);
 		
 		applyDefaultConfiguration(params);
-		
+
 		MockBeanDiscover mbd = new MockBeanDiscover();
 		
 		Map<Class<?>, Object> mocks = mbd.getMocks(testClass);
