@@ -65,11 +65,7 @@ public class EdiacaranInstance {
 		
 		applyDefaultConfiguration(params);
 
-		MockBeanDiscover mbd = new MockBeanDiscover();
-		
-		Map<Class<?>, Object> mocks = mbd.getMocks(testClass);
-		
-		for(Entry<Class<?>, Object> e: mocks.entrySet()) {
+		for(Entry<Class<?>, Object> e: getMocks(testClass).entrySet()) {
 			ediacaranBootstrap.addEntity(e.getValue(), e.getKey());	
 		}
 		
@@ -79,6 +75,22 @@ public class EdiacaranInstance {
 		this.pluginManager = ediacaranBootstrap.getPluginManager();
 	}
 	
+	private Map<Class<?>, Object> getMocks(Class<?> testClass) {
+		String pluginContext = getPluginContext(testClass);
+		
+		MockBeanDiscover mbd = new MockBeanDiscover();
+		return mbd.getMocks(testClass, pluginContext);
+	}
+	
+	private String getPluginContext(Class<?> testClass) {
+		
+		PluginContext pc = testClass.getAnnotation(PluginContext.class);
+		if(pc != null && !pc.value().isEmpty()) {
+			return pc.value();
+		}
+		
+		return null;
+	}
 	
 	public Object execute(Callable<Object> value, String context) throws Throwable {
 	
