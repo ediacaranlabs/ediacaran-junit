@@ -1,4 +1,4 @@
-package br.com.uoutec.community.ediacaran.test;
+package br.com.uoutec.community.ediacaran.junit;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,4 +1,4 @@
-package br.com.uoutec.community.ediacaran.test.junit5;
+package br.com.uoutec.community.ediacaran.junit.junit5;
 
 import java.lang.reflect.Method;
 
@@ -20,9 +20,9 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 import br.com.uoutec.application.javassist.JavassistCodeGenerator;
 import br.com.uoutec.application.proxy.CodeGenerator;
 import br.com.uoutec.application.proxy.ProxyFactory;
-import br.com.uoutec.community.ediacaran.test.EdiacaranInstance;
-import br.com.uoutec.community.ediacaran.test.JunitProxyHandler;
-import br.com.uoutec.community.ediacaran.test.PluginContext;
+import br.com.uoutec.community.ediacaran.junit.EdiacaranInstance;
+import br.com.uoutec.community.ediacaran.junit.JunitProxyHandler;
+import br.com.uoutec.community.ediacaran.junit.PluginContext;
 
 public class EdiacaranExt 
 	implements TestInstancePostProcessor, 

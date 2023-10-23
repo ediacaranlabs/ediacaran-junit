@@ -1,4 +1,4 @@
-package br.com.uoutec.community.ediacaran.test;
+package br.com.uoutec.community.ediacaran.junit;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

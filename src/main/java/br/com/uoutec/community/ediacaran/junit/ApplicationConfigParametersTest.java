@@ -1,4 +1,4 @@
-package br.com.uoutec.community.ediacaran.test;
+package br.com.uoutec.community.ediacaran.junit;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,8 +7,8 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface ApplicationConfigTest {
+public @interface ApplicationConfigParametersTest {
 
-	String value();
+	ApplicationConfigParameterTest[] value();
 	
 }

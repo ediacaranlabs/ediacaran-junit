@@ -1,4 +1,4 @@
-package br.com.uoutec.community.ediacaran.test;
+package br.com.uoutec.community.ediacaran.junit;
 
 import java.beans.XMLDecoder;
 import java.io.File;
