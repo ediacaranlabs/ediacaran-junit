@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
+import br.com.uoutec.application.security.SecurityThread;
 import br.com.uoutec.community.ediacaran.EdiacaranBootstrap;
 import br.com.uoutec.community.ediacaran.PluginManager;
 import br.com.uoutec.community.ediacaran.plugins.PluginInitializer;
@@ -101,6 +102,7 @@ public class EdiacaranInstance {
 			classLoader = (ClassLoader)contextVars.get(PluginInitializer.CLASS_LOADER);
 		}
 		 
+		/*
     	ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
     	
 		if(contextVars != null) {
@@ -115,7 +117,46 @@ public class EdiacaranInstance {
     			Thread.currentThread().setContextClassLoader(oldClassLoader);
     		}
     	}
+    	*/
     	
+		Throwable[] x = new Throwable[1];
+		Object[] r = new Object[1];
+		boolean[] dispatched = new boolean[1];
+		
+		Thread thread = new SecurityThread(()->{
+			synchronized(r) {
+				try {
+					dispatched[0] = false;
+					r[0] = value.call(); 
+				}
+				catch(Throwable ex) {
+					x[0] = ex;
+				}
+				finally {
+					dispatched[0] = true;
+					r.notifyAll();
+				}
+			}
+		});
+		
+		thread.setContextClassLoader(classLoader);
+		
+		try {
+			synchronized (r) {
+				thread.start();
+					while(!dispatched[0]) {
+						r.wait();
+					}
+			}
+		}
+		catch (InterruptedException e1) {
+		}
+		
+		if(x[0] != null) {
+			throw x[0];
+		}
+		
+		return r[0];
 	}
 	
 	private String getConfigPath(Class<?> testClass) {
