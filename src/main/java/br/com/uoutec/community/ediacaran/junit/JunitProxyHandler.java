@@ -1,16 +1,19 @@
 package br.com.uoutec.community.ediacaran.junit;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Named;
 
 import br.com.uoutec.application.proxy.ProxyHandler;
-import br.com.uoutec.community.ediacaran.plugins.EntityContextPlugin;
+import br.com.uoutec.application.security.SecurityAction;
+import br.com.uoutec.application.security.SecurityActionExecutor;
+import br.com.uoutec.ediacaran.core.plugins.EntityContextPlugin;
 
 public class JunitProxyHandler implements ProxyHandler{
 
@@ -91,7 +94,7 @@ public class JunitProxyHandler implements ProxyHandler{
 		testClass = getClassContext(testClass, classLoader);
 		method = getMethodContext(testClass, method, classLoader);
 		
-		Object testObject = createTestObject(testClass);
+		Object testObject = createTestObject(testClass, method);
 		
 		if(testObject == null) {
 			throw new IllegalStateException("Instantiation of bean failed: " + testClass.getName());
@@ -102,7 +105,7 @@ public class JunitProxyHandler implements ProxyHandler{
 	
 	private Class<?> getClassContext(Class<?> testClass, ClassLoader classLoader) {
     	try {
-    		return classLoader.loadClass(testClass.getName());
+    		return classLoader == null? testClass : classLoader.loadClass(testClass.getName());
     	}
     	catch(Exception e) {
     		throw new RuntimeException(e);
@@ -126,13 +129,21 @@ public class JunitProxyHandler implements ProxyHandler{
 		return contextClass.getMethod(method.getName(), contextParams);
 	}
 
-	private Object createTestObject(Class<?> testClass) {
-    	return EntityContextPlugin.getEntity(testClass);
+	private Object createTestObject(Class<?> testClass, Method thisMethod) throws Exception {
+		Map<String,Object> params = new HashMap<>();
+		params.put("type", testClass);
+		return SecurityActionExecutor
+			.run(
+					EntityContextPluginAction.class, 
+					Thread.currentThread().getContextClassLoader(), 
+					params
+			);
+    	//return EntityContextPlugin.getEntity(testClass);
     	
 	}
 	
     private void executeMethod(Object o, Method m
-    		) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    		) throws Exception {
     	
     	Class<?>[] paramsType = m.getParameterTypes();
     	Object[] paramsVals = new Object[paramsType.length];
@@ -150,6 +161,16 @@ public class JunitProxyHandler implements ProxyHandler{
     	}
     	
     	m.invoke(o, paramsVals);
+
     }
-	
+
+    public static class EntityContextPluginAction implements SecurityAction {
+
+		@Override
+		public Object run(Map<String,Object> params) throws Exception {
+			return EntityContextPlugin.getEntity((Class<?>) params.get("type"));
+		}
+    	
+    }
+    
 }

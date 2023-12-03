@@ -1,7 +1,6 @@
 package br.com.uoutec.community.ediacaran.junit;
 
 import java.beans.XMLDecoder;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -10,11 +9,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
+import br.com.uoutec.application.SystemProperties;
+import br.com.uoutec.application.io.Vfs;
 import br.com.uoutec.application.security.SecurityThread;
-import br.com.uoutec.community.ediacaran.EdiacaranBootstrap;
-import br.com.uoutec.community.ediacaran.PluginManager;
-import br.com.uoutec.community.ediacaran.plugins.PluginInitializer;
 import br.com.uoutec.community.ediacaran.test.mock.MockBeanDiscover;
+import br.com.uoutec.ediacaran.core.EdiacaranBootstrap;
+import br.com.uoutec.ediacaran.core.PluginManager;
+import br.com.uoutec.ediacaran.core.plugins.PluginInitializer;
 import br.com.uoutec.io.resource.DefaultResourceLoader;
 import br.com.uoutec.io.resource.Resource;
 import br.com.uoutec.io.resource.ResourceLoader;
@@ -38,6 +39,8 @@ public class EdiacaranInstance {
 		String config = getConfigPath(testClass);
 		
 		InputStream in = null;
+		ClassLoader old = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(testClass.getClassLoader());
 		try {
 			Resource resource = resourceLoader.getResource(config);
 			
@@ -46,8 +49,16 @@ public class EdiacaranInstance {
 			}
 			
 			in = resource.getInputStream();
-			XMLDecoder xml          = new XMLDecoder(in);
-			this.ediacaranBootstrap = (EdiacaranBootstrap) xml.readObject();
+			
+			/*
+			ExceptionListener ex = (e)->{
+				throw new PluginException(e);
+			};
+			*/
+			
+			//XMLDecoder xml = new XMLDecoder(in, null, ex, getClass().getClassLoader());
+			XMLDecoder xml = new XMLDecoder(in);
+			this.ediacaranBootstrap = (EdiacaranBootstrap)xml.readObject();
 			xml.close();
 		}
 		catch(IOException ex) {
@@ -60,6 +71,7 @@ public class EdiacaranInstance {
 			}
 			catch(Throwable ex) {
 			}
+			Thread.currentThread().setContextClassLoader(old);
 		}
 		
 		Map<String,Object> params = getParameters(testClass);
@@ -73,7 +85,7 @@ public class EdiacaranInstance {
 		ediacaranBootstrap.loadApplication(params);
 		ediacaranBootstrap.startApplication();
 		
-		this.pluginManager = ediacaranBootstrap.getPluginManager();
+		this.pluginManager = (PluginManager)ediacaranBootstrap.getPluginManager();
 	}
 	
 	private Map<Class<?>, Object> getMocks(Class<?> testClass) {
@@ -102,23 +114,6 @@ public class EdiacaranInstance {
 			classLoader = (ClassLoader)contextVars.get(PluginInitializer.CLASS_LOADER);
 		}
 		 
-		/*
-    	ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
-    	
-		if(contextVars != null) {
-			Thread.currentThread().setContextClassLoader(classLoader);
-		}
-    	
-    	try {
-    		return value.call();
-    	}
-    	finally {
-    		if(contextVars != null) {
-    			Thread.currentThread().setContextClassLoader(oldClassLoader);
-    		}
-    	}
-    	*/
-    	
 		Throwable[] x = new Throwable[1];
 		Object[] r = new Object[1];
 		boolean[] dispatched = new boolean[1];
@@ -190,8 +185,8 @@ public class EdiacaranInstance {
 			if(!contextParams.containsKey("app")) {
 					contextParams.put(
 						"app",
-						"ediacaran" + File.separator + 
-						"config" + File.separator +
+						"ediacaran" + Vfs.getSeparator() + 
+						"config" + Vfs.getSeparator() +
 						"ediacaran-config.xml"
 					);
 			}
@@ -199,27 +194,31 @@ public class EdiacaranInstance {
 			if(!contextParams.containsKey(EdiacaranBootstrap.CONFIG_FILE_VAR)) {
 				contextParams.put(
 					EdiacaranBootstrap.CONFIG_FILE_VAR, 
-					new File(System.getProperty("user.dir") + File.separator + 
-					"ediacaran" + File.separator + 
-					"config" + File.separator +
-					"ediacaran-dev.properties").toURI().toURL().toExternalForm()
+					Vfs.getPath(
+						SystemProperties.getProperty("user.dir") + Vfs.getSeparator() + 
+						"ediacaran" + Vfs.getSeparator() + 
+						"config" + Vfs.getSeparator() +
+						"ediacaran-dev.properties"
+					).toURL().toExternalForm()
 				);
 			}
 			
 			if(!contextParams.containsKey(EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR)) {
 				contextParams.put(
-					EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR, 
-					new File(System.getProperty("user.dir") + File.separator + 
-					"ediacaran" + File.separator + 
-					"config" + File.separator +
-					"log4j.configuration").toURI().toURL().toExternalForm()
+					EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR,
+					Vfs.getPath(
+						SystemProperties.getProperty("user.dir") + Vfs.getSeparator() + 
+						"ediacaran" + Vfs.getSeparator() + 
+						"config" + Vfs.getSeparator() +
+						"log4j.configuration"
+					).toURL().toExternalForm()
 				);
 			}
 		
 			if(!contextParams.containsKey(EdiacaranBootstrap.BASE_PATH_PROPERTY)) {
 				contextParams.put(
 					EdiacaranBootstrap.BASE_PATH_PROPERTY, 
-					"ediacaran" + File.separator 
+					"ediacaran" + Vfs.getSeparator() 
 				);
 			}
 				
