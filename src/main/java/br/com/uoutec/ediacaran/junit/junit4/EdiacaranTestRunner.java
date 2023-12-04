@@ -1,4 +1,4 @@
-package br.com.uoutec.community.ediacaran.junit.junit4;
+package br.com.uoutec.ediacaran.junit.junit4;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -16,8 +16,8 @@ import org.junit.runner.notification.RunNotifier;
 import br.com.uoutec.application.javassist.JavassistCodeGenerator;
 import br.com.uoutec.application.proxy.CodeGenerator;
 import br.com.uoutec.application.proxy.ProxyFactory;
-import br.com.uoutec.community.ediacaran.junit.EdiacaranInstance;
-import br.com.uoutec.community.ediacaran.junit.JunitProxyHandler;
+import br.com.uoutec.ediacaran.junit.EdiacaranInstance;
+import br.com.uoutec.ediacaran.junit.JunitProxyHandler;
 
 public class EdiacaranTestRunner extends Runner{
 

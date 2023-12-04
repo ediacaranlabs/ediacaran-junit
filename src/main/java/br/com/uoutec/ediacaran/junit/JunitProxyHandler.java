@@ -1,4 +1,4 @@
-package br.com.uoutec.community.ediacaran.junit;
+package br.com.uoutec.ediacaran.junit;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;

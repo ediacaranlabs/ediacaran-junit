@@ -1,7 +1,6 @@
-package br.com.uoutec.community.ediacaran.junit.junit5;
+package br.com.uoutec.ediacaran.junit.junit5;
 
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.HashSet;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -29,9 +28,9 @@ import br.com.uoutec.application.security.RuntimeSecurityPermission;
 import br.com.uoutec.application.security.SecurityClassLoader;
 import br.com.uoutec.application.security.SecurityPermission;
 import br.com.uoutec.application.security.SystemSecurityClassLoader;
-import br.com.uoutec.community.ediacaran.junit.EdiacaranInstance;
-import br.com.uoutec.community.ediacaran.junit.JunitProxyHandler;
-import br.com.uoutec.community.ediacaran.junit.PluginContext;
+import br.com.uoutec.ediacaran.junit.EdiacaranInstance;
+import br.com.uoutec.ediacaran.junit.JunitProxyHandler;
+import br.com.uoutec.ediacaran.junit.PluginContext;
 
 public class EdiacaranExt 
 	implements InvocationInterceptor, BeforeAllCallback, AfterAllCallback, 

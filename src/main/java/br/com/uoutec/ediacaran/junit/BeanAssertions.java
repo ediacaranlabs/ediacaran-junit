@@ -1,4 +1,4 @@
-package br.com.uoutec.community.ediacaran.junit;
+package br.com.uoutec.ediacaran.junit;
 
 import java.io.InputStream;
 import java.util.ArrayList;
