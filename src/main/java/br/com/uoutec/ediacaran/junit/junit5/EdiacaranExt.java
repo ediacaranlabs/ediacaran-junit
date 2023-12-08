@@ -97,8 +97,8 @@ public class EdiacaranExt
 
 		String context = 
 				getContextName(
-						invocationContext.getTargetClass(), 
-						invocationContext.getExecutable().getAnnotation(PluginContext.class)
+						extensionContext.getTestClass().get(), 
+						extensionContext.getTestMethod().get().getAnnotation(PluginContext.class)
 				);
 
 		ediacaran.execute(()->{
