@@ -3,9 +3,7 @@ package br.com.uoutec.ediacaran.junit;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Named;
@@ -130,15 +128,12 @@ public class JunitProxyHandler implements ProxyHandler{
 	}
 
 	private Object createTestObject(Class<?> testClass, Method thisMethod) throws Exception {
-		Map<String,Object> params = new HashMap<>();
-		params.put("type", testClass);
 		return SecurityActionExecutor
 			.run(
 					EntityContextPluginAction.class, 
 					Thread.currentThread().getContextClassLoader(), 
-					params
+					testClass
 			);
-    	//return EntityContextPlugin.getEntity(testClass);
     	
 	}
 	
@@ -167,8 +162,8 @@ public class JunitProxyHandler implements ProxyHandler{
     public static class EntityContextPluginAction implements SecurityAction {
 
 		@Override
-		public Object run(Map<String,Object> params) throws Exception {
-			return EntityContextPlugin.getEntity((Class<?>) params.get("type"));
+		public Object run(Object ... params) throws Exception {
+			return EntityContextPlugin.getEntity((Class<?>) params[0]);
 		}
     	
     }
