@@ -9,6 +9,7 @@ import java.util.Set;
 import javax.inject.Named;
 
 import br.com.uoutec.application.proxy.ProxyHandler;
+import br.com.uoutec.application.security.ContextSystemSecurityCheck;
 import br.com.uoutec.application.security.SecurityAction;
 import br.com.uoutec.application.security.SecurityActionExecutor;
 import br.com.uoutec.ediacaran.core.plugins.EntityContextPlugin;
@@ -88,7 +89,9 @@ public class JunitProxyHandler implements ProxyHandler{
 	
 	private void runInContext(Class<?> testClass, Method method) throws Exception {
 		
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		ClassLoader classLoader = ContextSystemSecurityCheck
+				.doPrivileged(()->Thread.currentThread().getContextClassLoader());
+		
 		testClass = getClassContext(testClass, classLoader);
 		method = getMethodContext(testClass, method, classLoader);
 		
@@ -131,7 +134,7 @@ public class JunitProxyHandler implements ProxyHandler{
 		return SecurityActionExecutor
 			.run(
 					EntityContextPluginAction.class, 
-					Thread.currentThread().getContextClassLoader(), 
+					ContextSystemSecurityCheck.doPrivileged(()->Thread.currentThread().getContextClassLoader()), 
 					testClass
 			);
     	
