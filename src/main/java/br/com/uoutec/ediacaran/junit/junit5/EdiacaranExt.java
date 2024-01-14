@@ -1,7 +1,6 @@
 package br.com.uoutec.ediacaran.junit.junit5;
 
 import java.lang.reflect.Method;
-import java.util.HashSet;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -19,14 +18,7 @@ import br.com.uoutec.application.javassist.JavassistCodeGenerator;
 import br.com.uoutec.application.proxy.CodeGenerator;
 import br.com.uoutec.application.proxy.ProxyFactory;
 import br.com.uoutec.application.proxy.SecurityProxyHandler;
-import br.com.uoutec.application.security.FileSecurityPermission;
-import br.com.uoutec.application.security.FileSecurityPermissionActions;
-import br.com.uoutec.application.security.MultiChainSecurityPermission;
-import br.com.uoutec.application.security.PropertySecurityPermission;
-import br.com.uoutec.application.security.PropertySecurityPermissionActions;
-import br.com.uoutec.application.security.RuntimeSecurityPermission;
 import br.com.uoutec.application.security.SecurityClassLoader;
-import br.com.uoutec.application.security.SecurityPermission;
 import br.com.uoutec.application.security.SystemSecurityClassLoader;
 import br.com.uoutec.ediacaran.junit.EdiacaranInstance;
 import br.com.uoutec.ediacaran.junit.JunitProxyHandler;
@@ -44,34 +36,7 @@ public class EdiacaranExt
 	
 	public EdiacaranExt() throws Throwable {
 		
-		this.classLoader = SystemSecurityClassLoader.getDefaultSystemSecurityClassloader();
-		
-		@SuppressWarnings("serial")
-		SecurityPermission securityPermission =
-				new MultiChainSecurityPermission(new HashSet<SecurityPermission>() {{
-					add(new PropertySecurityPermission(
-							"app.*",
-							PropertySecurityPermissionActions.ALL
-					)); 
-					add(new PropertySecurityPermission(
-							"java.*",
-							PropertySecurityPermissionActions.ALL
-					)); 
-					add(new RuntimeSecurityPermission("setContextClassLoader")); 
-					add(new RuntimeSecurityPermission("security.*")); 
-					//add(new RuntimeSecurityPermission("package.*")); 
-					add(new RuntimeSecurityPermission("app.*")); 
-					add(new RuntimeSecurityPermission("doPrivileged"));
-					add(new RuntimeSecurityPermission("setContextClassLoader"));
-					add(new FileSecurityPermission(
-							"*",
-							FileSecurityPermissionActions.ALL
-							
-					));
-				}}
-		);
-
-		//SystemSecurityClassLoader.registerPermissions((SecurityClassLoader)classLoader, securityPermission);
+		this.classLoader = getClass().getClassLoader();//SystemSecurityClassLoader.getDefaultSystemSecurityClassloader();
 		
 		ediacaran = (EdiacaranInstance) SecurityClassLoader
 				.getDefaultcodegenerator()
@@ -81,10 +46,11 @@ public class EdiacaranExt
 								SecurityClassLoader.getDefaultcodegenerator(), 
 								getClass().getClassLoader(), 
 								SystemSecurityClassLoader.getDefaultSystemSecurityClassloader().getCodeGenerator(), 
-								this.classLoader, 
-								this.classLoader
-									.loadClass(EdiacaranInstance.class.getName())
-										.getConstructor().newInstance()
+								this.classLoader,
+								new EdiacaranInstance()
+								//this.classLoader
+								//	.loadClass(EdiacaranInstance.class.getName())
+								//		.getConstructor().newInstance()
 						)
 				);
 		

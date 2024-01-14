@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import br.com.uoutec.application.SystemProperties;
+import br.com.uoutec.application.io.Path;
 import br.com.uoutec.application.io.Vfs;
 import br.com.uoutec.application.security.SecurityThread;
 import br.com.uoutec.community.ediacaran.test.mock.MockBeanDiscover;
@@ -25,6 +26,16 @@ public class EdiacaranInstance {
 	private EdiacaranBootstrap ediacaranBootstrap;
 	
 	private PluginManager pluginManager;
+	
+	private Path[] bases;
+	
+	public EdiacaranInstance() {
+		this.bases = new Path[] {
+				Vfs.getPath(SystemProperties.getProperty("user.dir")).getPath("ediacaran"),
+				Vfs.getPath("file:///develop/ediacaran"),
+				Vfs.getPath("file:///ediacaran"),
+		};
+	}
 	
 	public void destroy() {
 		if(ediacaranBootstrap != null) {
@@ -185,43 +196,50 @@ public class EdiacaranInstance {
 			if(!contextParams.containsKey("app")) {
 					contextParams.put(
 						"app",
-						"ediacaran" + Vfs.getSeparator() + 
-						"config" + Vfs.getSeparator() +
-						"ediacaran-config.xml"
+						getPath("config" + Vfs.getSeparator() +	"ediacaran-config.xml")
 					);
 			}
 			
 			if(!contextParams.containsKey(EdiacaranBootstrap.CONFIG_FILE_VAR)) {
 				contextParams.put(
 					EdiacaranBootstrap.CONFIG_FILE_VAR, 
-					Vfs.getPath(
-						SystemProperties.getProperty("user.dir") + Vfs.getSeparator() + 
-						"ediacaran" + Vfs.getSeparator() + 
-						"config" + Vfs.getSeparator() +
-						"ediacaran-dev.properties"
-					).toURL().toExternalForm()
+					getPath("config" + Vfs.getSeparator() +	"ediacaran-dev.properties").toURL().toExternalForm()
 				);
 			}
 			
 			if(!contextParams.containsKey(EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR)) {
 				contextParams.put(
 					EdiacaranBootstrap.LOGGER_CONFIG_FILE_VAR,
-					Vfs.getPath(
-						SystemProperties.getProperty("user.dir") + Vfs.getSeparator() + 
-						"ediacaran" + Vfs.getSeparator() + 
-						"config" + Vfs.getSeparator() +
-						"log4j.configuration"
-					).toURL().toExternalForm()
+					getPath("config" + Vfs.getSeparator() +	"log4j.configuration").toURL().toExternalForm()
 				);
 			}
-		
+
+			if(!contextParams.containsKey(EdiacaranBootstrap.CONFIG_PATH_PROPERTY)) {
+				contextParams.put(
+					EdiacaranBootstrap.CONFIG_PATH_PROPERTY,
+					getPath("config")
+				);
+			}
+			
 			if(!contextParams.containsKey(EdiacaranBootstrap.BASE_PATH_PROPERTY)) {
 				contextParams.put(
 					EdiacaranBootstrap.BASE_PATH_PROPERTY, 
-					"ediacaran" + Vfs.getSeparator() 
-				);
+					getPath(null)
+ 				);
 			}
 				
+	}
+	
+	private Path getPath(String path) {
+		
+		for(Path base: bases) {
+			Path p = path == null? base : base.getPath(path);
+			if(p.exists()) {
+				return p;
+			}
+		}
+		
+		throw new RuntimeException(path);
 	}
 	
 	private Map<String,Object> getPluginConfigVars(PluginManager pluginManager, String context){
