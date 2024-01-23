@@ -19,7 +19,7 @@ import br.com.uoutec.application.proxy.CodeGenerator;
 import br.com.uoutec.application.proxy.ProxyFactory;
 import br.com.uoutec.application.proxy.SecurityProxyHandler;
 import br.com.uoutec.application.security.SecurityClassLoader;
-import br.com.uoutec.application.security.SystemSecurityClassLoader;
+import br.com.uoutec.application.security.SystemSecurityClassLoaderProvider;
 import br.com.uoutec.ediacaran.junit.EdiacaranInstance;
 import br.com.uoutec.ediacaran.junit.JunitProxyHandler;
 import br.com.uoutec.ediacaran.junit.PluginContext;
@@ -45,7 +45,7 @@ public class EdiacaranExt
 						new SecurityProxyHandler(
 								SecurityClassLoader.getDefaultcodegenerator(), 
 								getClass().getClassLoader(), 
-								SystemSecurityClassLoader.getDefaultSystemSecurityClassloader().getCodeGenerator(), 
+								SystemSecurityClassLoaderProvider.getDefaultSystemSecurityClassloader().getCodeGenerator(), 
 								this.classLoader,
 								new EdiacaranInstance()
 								//this.classLoader
