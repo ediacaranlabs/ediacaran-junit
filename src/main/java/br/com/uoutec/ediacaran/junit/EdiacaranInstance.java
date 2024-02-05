@@ -1,5 +1,6 @@
 package br.com.uoutec.ediacaran.junit;
 
+import java.beans.ExceptionListener;
 import java.beans.XMLDecoder;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +17,7 @@ import br.com.uoutec.application.security.SecurityThread;
 import br.com.uoutec.community.ediacaran.test.mock.MockBeanDiscover;
 import br.com.uoutec.ediacaran.core.EdiacaranBootstrap;
 import br.com.uoutec.ediacaran.core.PluginManager;
+import br.com.uoutec.ediacaran.core.plugins.PluginException;
 import br.com.uoutec.ediacaran.core.plugins.PluginInitializer;
 import br.com.uoutec.io.resource.DefaultResourceLoader;
 import br.com.uoutec.io.resource.Resource;
@@ -28,6 +30,10 @@ public class EdiacaranInstance {
 	private PluginManager pluginManager;
 	
 	private Path[] bases;
+	
+	private Class<?> testClass;
+	
+	private Map<String,Object> params;
 	
 	public EdiacaranInstance() {
 		this.bases = new Path[] {
@@ -45,6 +51,38 @@ public class EdiacaranInstance {
 	
 	public void start(Class<?> testClass) throws Throwable{
 		
+		this.testClass = testClass;
+		
+		createApplication();
+		loadConfiguration();		
+		registerMocks();
+		startApplication();
+		
+	}
+	
+	private void startApplication() {
+		ediacaranBootstrap.loadApplication(params);
+		ediacaranBootstrap.startApplication();
+		
+		this.pluginManager = (PluginManager)ediacaranBootstrap.getPluginManager();
+	}
+	
+	private void loadConfiguration() throws MalformedURLException {
+		this.params = getParameters(testClass);
+		applyDefaultConfiguration(params);
+	}
+	
+	private void registerMocks() {
+		
+		Map<Class<?>, Object> mocks = getMocks(testClass);
+		for(Entry<Class<?>, Object> e: mocks.entrySet()) {
+			ediacaranBootstrap.addEntity(e.getValue(), e.getKey());	
+		}
+		
+	}
+	
+	private void createApplication() {
+		
 		ResourceLoader resourceLoader = new DefaultResourceLoader();
 		
 		String config = getConfigPath(testClass);
@@ -61,14 +99,12 @@ public class EdiacaranInstance {
 			
 			in = resource.getInputStream();
 			
-			/*
 			ExceptionListener ex = (e)->{
 				throw new PluginException(e);
 			};
-			*/
 			
-			//XMLDecoder xml = new XMLDecoder(in, null, ex, getClass().getClassLoader());
-			XMLDecoder xml = new XMLDecoder(in);
+			XMLDecoder xml = new XMLDecoder(in, null, ex);
+			//XMLDecoder xml = new XMLDecoder(in);
 			this.ediacaranBootstrap = (EdiacaranBootstrap)xml.readObject();
 			xml.close();
 		}
@@ -85,18 +121,6 @@ public class EdiacaranInstance {
 			Thread.currentThread().setContextClassLoader(old);
 		}
 		
-		Map<String,Object> params = getParameters(testClass);
-		
-		applyDefaultConfiguration(params);
-
-		for(Entry<Class<?>, Object> e: getMocks(testClass).entrySet()) {
-			ediacaranBootstrap.addEntity(e.getValue(), e.getKey());	
-		}
-		
-		ediacaranBootstrap.loadApplication(params);
-		ediacaranBootstrap.startApplication();
-		
-		this.pluginManager = (PluginManager)ediacaranBootstrap.getPluginManager();
 	}
 	
 	private Map<Class<?>, Object> getMocks(Class<?> testClass) {
