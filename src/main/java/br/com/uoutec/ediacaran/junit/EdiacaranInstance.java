@@ -15,6 +15,7 @@ import br.com.uoutec.application.io.Path;
 import br.com.uoutec.application.io.Vfs;
 import br.com.uoutec.application.security.SecurityThread;
 import br.com.uoutec.community.ediacaran.test.mock.MockBeanDiscover;
+import br.com.uoutec.community.ediacaran.test.mock.SecurityPolicyManagerMock;
 import br.com.uoutec.ediacaran.core.EdiacaranBootstrap;
 import br.com.uoutec.ediacaran.core.PluginManager;
 import br.com.uoutec.ediacaran.core.plugins.PluginException;
@@ -73,12 +74,17 @@ public class EdiacaranInstance {
 	}
 	
 	private void registerMocks() {
+		String pluginContext = getPluginContext(testClass);
 		
-		Map<Class<?>, Object> mocks = getMocks(testClass);
+		MockBeanDiscover mbd = new MockBeanDiscover();
+		
+		Map<Class<?>, Object> mocks =  mbd.getMocks(testClass, pluginContext);
+		
 		for(Entry<Class<?>, Object> e: mocks.entrySet()) {
 			ediacaranBootstrap.addEntity(e.getValue(), e.getKey());	
 		}
 		
+		ediacaranBootstrap.setSecurityPolicyManager(new SecurityPolicyManagerMock(pluginContext, testClass));
 	}
 	
 	private void createApplication() {
@@ -121,13 +127,6 @@ public class EdiacaranInstance {
 			Thread.currentThread().setContextClassLoader(old);
 		}
 		
-	}
-	
-	private Map<Class<?>, Object> getMocks(Class<?> testClass) {
-		String pluginContext = getPluginContext(testClass);
-		
-		MockBeanDiscover mbd = new MockBeanDiscover();
-		return mbd.getMocks(testClass, pluginContext);
 	}
 	
 	private String getPluginContext(Class<?> testClass) {
