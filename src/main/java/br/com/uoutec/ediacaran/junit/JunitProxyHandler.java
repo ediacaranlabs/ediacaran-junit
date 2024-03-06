@@ -89,21 +89,25 @@ public class JunitProxyHandler implements ProxyHandler{
 	
 	private void runInContext(Class<?> testClass, Method method) throws Exception {
 		
-		ClassLoader classLoader = ContextSystemSecurityCheck
-				.doPrivileged(()->Thread.currentThread().getContextClassLoader());
-		
-		testClass = getClassContext(testClass, classLoader);
-		method = getMethodContext(testClass, method, classLoader);
-		
-		Object testObject = createTestObject(testClass, method);
+		ClassLoader classLoader = getContextClassLoader();
+		testClass               = getClassContext(testClass, classLoader);
+		method                  = getMethodContext(testClass, method, classLoader);
+		Object testObject       = createTestObject(testClass, method);
 		
 		if(testObject == null) {
 			throw new IllegalStateException("Instantiation of bean failed: " + testClass.getName());
 		}
+		
 		executeMethod(testObject, method);
 		
 	}
 	
+	private ClassLoader getContextClassLoader() {
+		return ContextSystemSecurityCheck
+				.doPrivileged(
+						()->Thread.currentThread().getContextClassLoader()
+				);
+	}
 	private Class<?> getClassContext(Class<?> testClass, ClassLoader classLoader) {
     	try {
     		return classLoader == null? testClass : classLoader.loadClass(testClass.getName());
@@ -134,10 +138,9 @@ public class JunitProxyHandler implements ProxyHandler{
 		return SecurityActionExecutor
 			.run(
 					EntityContextPluginAction.class, 
-					ContextSystemSecurityCheck.doPrivileged(()->Thread.currentThread().getContextClassLoader()), 
+					getContextClassLoader(), 
 					testClass
 			);
-    	
 	}
 	
     private void executeMethod(Object o, Method m
