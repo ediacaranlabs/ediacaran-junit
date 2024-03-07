@@ -14,7 +14,7 @@ import org.junit.runner.notification.RunNotifier;
 
 import br.com.uoutec.ediacaran.junit.EdiacaranInstance;
 
-public class EdiacaranTestRunner extends Runner{
+public class EdiacaranTestRunner extends Runner {
 
 	private Class<?> testClass;
 
@@ -29,6 +29,7 @@ public class EdiacaranTestRunner extends Runner{
 	private Method after;
 	
     public EdiacaranTestRunner(Class<?> testClass) {
+    	super();
     	init(testClass);
     }
     
