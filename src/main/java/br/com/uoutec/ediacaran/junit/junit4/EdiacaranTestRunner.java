@@ -13,7 +13,6 @@ import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
 
 import br.com.uoutec.ediacaran.junit.EdiacaranInstance;
-import br.com.uoutec.ediacaran.junit.PluginContext;
 
 public class EdiacaranTestRunner extends Runner{
 
@@ -157,8 +156,7 @@ public class EdiacaranTestRunner extends Runner{
 	}
 	
 	protected Object createTestInstance(RunNotifier notifier) throws Throwable {
-		String context = getContextName(testClass, null);
-		return ediacaran.getTestInstance(context);
+		return ediacaran.getTestInstance();
 	}
 	
 	@Override
@@ -210,21 +208,8 @@ public class EdiacaranTestRunner extends Runner{
 	}
 
 	protected void run(Method method, Object test, RunNotifier notifier) throws Throwable {
-		String context = getContextName(testClass, null);
-		ediacaran.executeTest(method, test, context);
-	}
-	
-	private String getContextName(Class<?> clazz, PluginContext context){
-		
-		if(context == null && clazz.isAnnotationPresent(PluginContext.class)) {
-			context = clazz.getDeclaredAnnotation(PluginContext.class);
-		}
-	
-		if(context == null) {
-			throw new IllegalStateException("Context not found! Use @PluginContext.");
-		}
-		
-		return context.value();
+		method.invoke(test, new Object[method.getParameterCount()]);
+		//ediacaran.executeTest(method, test, new Object[method.getParameterCount()]);
 	}
 	
 }

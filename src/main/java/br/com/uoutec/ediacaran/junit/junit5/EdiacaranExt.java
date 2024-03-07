@@ -14,68 +14,22 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
-import br.com.uoutec.application.javassist.JavassistCodeGenerator;
-import br.com.uoutec.application.proxy.CodeGenerator;
-import br.com.uoutec.application.proxy.ProxyFactory;
-import br.com.uoutec.application.proxy.SecurityProxyHandler;
-import br.com.uoutec.application.security.SecurityClassLoader;
-import br.com.uoutec.application.security.SystemSecurityClassLoaderProvider;
 import br.com.uoutec.ediacaran.junit.EdiacaranInstance;
-import br.com.uoutec.ediacaran.junit.JunitProxyHandler;
-import br.com.uoutec.ediacaran.junit.PluginContext;
 
 public class EdiacaranExt 
 	implements InvocationInterceptor, BeforeAllCallback, AfterAllCallback, 
 	ParameterResolver, TestInstanceFactory {
 
-	private CodeGenerator codeGenerator;
-	
 	private EdiacaranInstance ediacaran;
 	
-	private ClassLoader classLoader;
-	
 	public EdiacaranExt() throws Throwable {
-		
-		this.classLoader = getClass().getClassLoader();//SystemSecurityClassLoader.getDefaultSystemSecurityClassloader();
-		
-		ediacaran = (EdiacaranInstance) SecurityClassLoader
-				.getDefaultcodegenerator()
-				.getProxyFactory(EdiacaranInstance.class)
-				.getNewProxy(
-						new SecurityProxyHandler(
-								SecurityClassLoader.getDefaultcodegenerator(), 
-								getClass().getClassLoader(), 
-								SystemSecurityClassLoaderProvider.getDefaultSystemSecurityClassloader().getCodeGenerator(), 
-								this.classLoader,
-								new EdiacaranInstance()
-								//this.classLoader
-								//	.loadClass(EdiacaranInstance.class.getName())
-								//		.getConstructor().newInstance()
-						)
-				);
-		
-		codeGenerator = new JavassistCodeGenerator();
+		ediacaran = new EdiacaranInstance();
 	}
 	
 	 public void interceptTestMethod(Invocation<Void> invocation,
 	            ReflectiveInvocationContext<Method> invocationContext,
 	            ExtensionContext extensionContext) throws Throwable {
-
-		String context = 
-				getContextName(
-						extensionContext.getTestClass().get(), 
-						extensionContext.getTestMethod().get().getAnnotation(PluginContext.class)
-				);
-
-		ediacaran.execute(()->{
-			try {
-				return invocation.proceed();
-			}
-			catch(Throwable ex) {
-				throw new Exception(ex);
-			}
-		}, context);
-
+		 invocation.proceed();
     }
 
 	@Override
@@ -91,11 +45,7 @@ public class EdiacaranExt
 	@Override
 	public void beforeAll(ExtensionContext context) throws Exception {
 		try {
-			Class<?> testClass = 
-					this.classLoader
-					.loadClass(context.getTestClass().get().getName());
-			//ediacaran.start(context.getTestClass().get());
-			ediacaran.start(testClass);
+			ediacaran.start(context.getTestClass().get());
 		}
 		catch(Throwable ex) {
 			throw new Exception(ex);
@@ -104,36 +54,23 @@ public class EdiacaranExt
 
 
 	@Override
-	public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
-			throws ParameterResolutionException {
+	public boolean supportsParameter(ParameterContext parameterContext, 
+			ExtensionContext extensionContext) throws ParameterResolutionException {
 		return true;
 	}
 
 
 	@Override
-	public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
-			throws ParameterResolutionException {
+	public Object resolveParameter(ParameterContext parameterContext, 
+			ExtensionContext extensionContext) throws ParameterResolutionException {
 		return null;
 	}
 	
-	private String getContextName(Class<?> clazz, PluginContext context){
-		
-		if(context == null && clazz.isAnnotationPresent(PluginContext.class)) {
-			context = clazz.getDeclaredAnnotation(PluginContext.class);
-		}
-	
-		return context == null? null : context.value();
-	}
-
 	@Override
-	public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
+	public Object createTestInstance(TestInstanceFactoryContext factoryContext, 
+			ExtensionContext extensionContext)
 			throws TestInstantiationException {
-		
-		Class<?> type = factoryContext.getTestClass();
-		
-		ProxyFactory proxyFactory = codeGenerator.getProxyFactory(type);
-		
-		return proxyFactory.getNewProxy(new JunitProxyHandler(ediacaran));
+		return ediacaran.getTestInstance();
 	}
 	
 }

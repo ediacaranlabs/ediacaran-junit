@@ -13,12 +13,13 @@ public class ExecuteTestAction implements SecurityAction {
 	public Object run(Object... params) throws Exception {
 		Object target  = params[0];
 		Class<?> type  = (Class<?>)params[1];
-		Method method  = (Method) params[2];
-		ClassLoader classLoader = (ClassLoader)params[3];
+		Method method  = (Method)params[2];
+		Object[] param = (Object[]) params[3];
+		ClassLoader classLoader = (ClassLoader)params[4];
 
 		type = classLoader.loadClass(type.getName());
 		method = getMethod(method, type, classLoader);
-		Object[] param = getParameters(method, classLoader);
+		param = getParameters(method, param, classLoader);
 		return method.invoke(target, param);
 	}
     
@@ -35,23 +36,28 @@ public class ExecuteTestAction implements SecurityAction {
 		return type.getMethod(method.getName(), params);
 	}
 	
-    private Object[] getParameters(Method m, ClassLoader classLoader) throws Exception {
+    private Object[] getParameters(Method m, Object[] params, ClassLoader classLoader) throws Exception {
     	
     	Class<?>[] paramsType = m.getParameterTypes();
-    	Object[] paramsVals = new Object[paramsType.length];
     	
     	for(int i=0;i< paramsType.length;i++) {
+    		
+    		if(params[i] != null) {
+    			continue;
+    		}
+    		
     		Class<?> paramType = paramsType[i];
     		Named named = m.getAnnotatedParameterTypes()[i].getAnnotation(Named.class);
     		
-			paramsVals[i] = getParameter(
+    		params[i] = getParameter(
 					named == null? null : named.value(), 
 							paramType, 
 							classLoader
 					);
+    		
     	}
     	
-    	return paramsVals;
+    	return params;
     }
 
 	protected Object getParameter(String name, Class<?> type, ClassLoader classLoader) throws Exception {
