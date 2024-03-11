@@ -9,9 +9,9 @@ import java.util.concurrent.Callable;
 import br.com.uoutec.application.javassist.JavassistCodeGenerator;
 import br.com.uoutec.application.proxy.CodeGenerator;
 import br.com.uoutec.application.proxy.ProxyFactory;
-import br.com.uoutec.application.se.ApplicationBootstrapProxy;
 import br.com.uoutec.application.security.SecurityActionExecutor;
 import br.com.uoutec.application.security.SecurityThreadExecutor;
+import br.com.uoutec.community.ediacaran.test.mock.EdiacaranBootstrapDiscover;
 import br.com.uoutec.community.ediacaran.test.mock.MockBeanDiscover;
 import br.com.uoutec.community.ediacaran.test.mock.SecurityPolicyManagerMock;
 import br.com.uoutec.ediacaran.core.EdiacaranBootstrap;
@@ -52,8 +52,7 @@ public class EdiacaranInstance {
 	
 	private void startApplication() {
 		executeInSecurityThread(()->{
-			ediacaranBootstrap.loadApplication(params);
-			ediacaranBootstrap.startApplication();
+			this.ediacaranBootstrap.startApplication();
 			this.pluginManager = (PluginManager)ediacaranBootstrap.getPluginManager();
 		});
 	}
@@ -87,9 +86,14 @@ public class EdiacaranInstance {
 	private void createApplication() {
 		executeInSecurityThread(()->{
 			Map<String,Object> map = new HashMap<String,Object>(this.params);
-			ApplicationBootstrapProxy app = new ApplicationBootstrapProxy("app");
-			app.loadApplication(map);
-			this.ediacaranBootstrap = (EdiacaranBootstrap)app.getApplicationBootstrap();
+			//ApplicationBootstrapProxy app = new ApplicationBootstrapProxy("app");
+			//app.loadApplication(map);
+			//app.createApplication();
+			EdiacaranBootstrapDiscover ebd = new EdiacaranBootstrapDiscover();
+			this.ediacaranBootstrap =  ebd.getEdiacaranBootstrap(testClass);
+			this.ediacaranBootstrap.loadApplication(map);
+			this.ediacaranBootstrap.createApplication();
+			//this.ediacaranBootstrap = (EdiacaranBootstrap)app.getApplicationBootstrap();
 		});		
 	}
 	
