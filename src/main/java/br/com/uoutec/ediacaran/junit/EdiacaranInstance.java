@@ -86,14 +86,10 @@ public class EdiacaranInstance {
 	private void createApplication() {
 		executeInSecurityThread(()->{
 			Map<String,Object> map = new HashMap<String,Object>(this.params);
-			//ApplicationBootstrapProxy app = new ApplicationBootstrapProxy("app");
-			//app.loadApplication(map);
-			//app.createApplication();
 			EdiacaranBootstrapDiscover ebd = new EdiacaranBootstrapDiscover();
 			this.ediacaranBootstrap =  ebd.getEdiacaranBootstrap(testClass);
 			this.ediacaranBootstrap.loadApplication(map);
 			this.ediacaranBootstrap.createApplication();
-			//this.ediacaranBootstrap = (EdiacaranBootstrap)app.getApplicationBootstrap();
 		});		
 	}
 	
