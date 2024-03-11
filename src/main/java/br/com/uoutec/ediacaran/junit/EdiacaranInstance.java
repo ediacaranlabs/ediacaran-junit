@@ -180,11 +180,19 @@ public class EdiacaranInstance {
 	private void executeInSecurityThread(Runnable value) {
         SecurityThreadExecutor ste = new SecurityThreadExecutor(value, true);
         ste.start();
+        
+        if(ste.getException() != null) {
+        	throw new RuntimeException(ste.getException());
+        }
 	}
 	
 	private void executeInSecurityThread(Runnable value, ClassLoader classLoader) {
         SecurityThreadExecutor ste = new SecurityThreadExecutor(value, classLoader, true);
         ste.start();
+        
+        if(ste.getException() != null) {
+        	throw new RuntimeException(ste.getException());
+        }
 	}
 	
 	private String getPluginContext(Class<?> testClass) {
