@@ -6,11 +6,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
+import br.com.uoutec.application.ApplicationThread;
 import br.com.uoutec.application.javassist.JavassistCodeGenerator;
 import br.com.uoutec.application.proxy.CodeGenerator;
 import br.com.uoutec.application.proxy.ProxyFactory;
+import br.com.uoutec.application.security.ContextSystemSecurityCheck;
 import br.com.uoutec.application.security.SecurityActionExecutor;
-import br.com.uoutec.application.security.SecurityThreadExecutor;
 import br.com.uoutec.community.ediacaran.test.mock.EdiacaranBootstrapDiscover;
 import br.com.uoutec.community.ediacaran.test.mock.MockBeanDiscover;
 import br.com.uoutec.community.ediacaran.test.mock.SecurityPolicyManagerMock;
@@ -108,10 +109,8 @@ public class EdiacaranInstance {
 		ClassLoader classLoader = getContextClassLoader(context);
 		
 		Object instance = execute(()->{
-			
 			return SecurityActionExecutor.run(
 					EntityContextPluginAction.class, classLoader, testClass, null, classLoader);
-			
 		}, context);
 		
 		ProxyFactory proxyFactory = codeGenerator.getProxyFactory(testClass);
@@ -174,20 +173,24 @@ public class EdiacaranInstance {
 	}
 	
 	private void executeInSecurityThread(Runnable value) {
-        SecurityThreadExecutor ste = new SecurityThreadExecutor(value, true);
-        ste.start();
-        
-        if(ste.getException() != null) {
-        	throw new RuntimeException(ste.getException());
+		ApplicationThread app = 
+				ContextSystemSecurityCheck.doPrivileged(()->new ApplicationThread(value)); 
+		
+		app.start(true);
+		
+        if(app.getException() != null) {
+        	throw new RuntimeException(app.getException());
         }
 	}
 	
 	private void executeInSecurityThread(Runnable value, ClassLoader classLoader) {
-        SecurityThreadExecutor ste = new SecurityThreadExecutor(value, classLoader, true);
-        ste.start();
-        
-        if(ste.getException() != null) {
-        	throw new RuntimeException(ste.getException());
+		ApplicationThread app = 
+				ContextSystemSecurityCheck.doPrivileged(()->new ApplicationThread(value, classLoader)); 
+		
+		app.start(true);
+		
+        if(app.getException() != null) {
+        	throw new RuntimeException(app.getException());
         }
 	}
 	
