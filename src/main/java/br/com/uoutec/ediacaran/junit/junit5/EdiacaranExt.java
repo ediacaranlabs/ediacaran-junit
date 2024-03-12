@@ -38,6 +38,7 @@ public class EdiacaranExt
 			ediacaran.destroy();
 		}
 		catch(Throwable ex) {
+			throw new Exception(ex);
 		}
 	}
 
