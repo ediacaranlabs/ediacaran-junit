@@ -112,6 +112,10 @@ public class EdiacaranInstance {
 			return SecurityActionExecutor.run(
 					EntityContextPluginAction.class, classLoader, testClass, null, classLoader);
 		}, context);
+
+		if(instance == null) {
+			throw new RuntimeException("test bean not found!");
+		}
 		
 		ProxyFactory proxyFactory = codeGenerator.getProxyFactory(testClass);
 		return proxyFactory.getNewProxy(new JunitProxyHandler(this, instance));
