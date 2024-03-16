@@ -14,7 +14,6 @@ import br.com.uoutec.application.security.ContextSystemSecurityCheck;
 import br.com.uoutec.application.security.SecurityActionExecutor;
 import br.com.uoutec.community.ediacaran.test.mock.EdiacaranBootstrapDiscover;
 import br.com.uoutec.community.ediacaran.test.mock.MockBeanDiscover;
-import br.com.uoutec.community.ediacaran.test.mock.SecurityPolicyManagerMock;
 import br.com.uoutec.ediacaran.core.EdiacaranBootstrap;
 import br.com.uoutec.ediacaran.core.PluginManager;
 import br.com.uoutec.ediacaran.core.plugins.PluginInitializer;
@@ -80,7 +79,6 @@ public class EdiacaranInstance {
 				ediacaranBootstrap.addEntity(e.getValue(), e.getKey());	
 			}
 			
-			ediacaranBootstrap.setSecurityPolicyManager(new SecurityPolicyManagerMock(pluginContext, testClass));
 		});		
 	}
 	
