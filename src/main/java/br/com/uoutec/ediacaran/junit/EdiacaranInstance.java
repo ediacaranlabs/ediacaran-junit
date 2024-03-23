@@ -59,8 +59,9 @@ public class EdiacaranInstance {
 	
 	private void loadConfiguration() {
 		try {
-			EdiacaranInstanceConfig eic = new EdiacaranInstanceConfig();
-			this.params = eic.getParameters(testClass);
+			ApplicationStartConfigJunit eic = new ApplicationStartConfigJunit();
+			this.params = new HashMap<String,Object>();
+			eic.applyDefaultConfiguration(testClass, this.params);
 		}
 		catch(Throwable ex) {
 			throw new RuntimeException(ex);
