@@ -140,6 +140,10 @@ public class BeanAssertions {
 		if(Bean.isPrimitive(expected.getClass())) {
 			Assertions.assertEquals(expected, actual);
 		}
+		else
+		if(expected.getClass().isEnum()) {
+			Assertions.assertEquals(expected, actual);
+		}
 		else {
 			assertEquals(new Bean(expected), new Bean(actual), filter, path == null? "" : path + ".");
 		}
@@ -158,11 +162,14 @@ public class BeanAssertions {
 			
 			BeanPropertyAnnotation actualProperty = (BeanPropertyAnnotation) actual.getProperty(expectedProperty.getName());
 			
-			if(expectedProperty.canSet()) {
+			Object expectedObj = expected.get(expectedProperty.getName());
+			Object actualObj = actual.get(actualProperty.getName());
+			
+			if(expectedProperty.canGet()) {
 
 				try {
-					assertEquals(expected.get(expectedProperty.getName()), 
-							actual.get(actualProperty.getName()), filter, path + expectedProperty.getName());
+					assertEquals(expectedObj, 
+							actualObj, filter, path + expectedProperty.getName());
 				}
 				catch(AssertionFailedError e) {
 					throw new AssertionFailedError(path + expectedProperty.getName(), e);
