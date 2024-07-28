@@ -51,7 +51,7 @@ public class BeanAssertions {
 		try {
 			while((expectedL = expected.read(expectedBuf, 0, expectedBuf.length)) > 0) {
 				
-				actualL = actual.read(actualBuf, 0, actualBuf.length);
+				actualL = actual.read(actualBuf, 0, expectedL);
 				
 				expectedTotal += expectedL;
 				actualTotal += actualL;
