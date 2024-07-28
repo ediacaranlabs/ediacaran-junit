@@ -15,6 +15,7 @@ import org.opentest4j.AssertionFailedError;
 
 import br.com.uoutec.application.bean.Bean;
 import br.com.uoutec.application.bean.BeanPropertyAnnotation;
+import br.com.uoutec.application.io.Path;
 
 public class BeanAssertions {
 
@@ -38,6 +39,10 @@ public class BeanAssertions {
 				.trim();
 		
 		Assertions.assertEquals(expected, actual);
+	}
+	
+	public static void assertEquals(Path expected, Path actual) {
+		assertEquals(expected.openInputStream(), actual.openInputStream());		
 	}
 	
 	public static void assertEquals(InputStream expected, InputStream actual) {
